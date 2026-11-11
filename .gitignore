@@ -1,0 +1,6 @@
+.env
+config.local.php
+data/
+tests/*.sqlite
+tests/*.sqlite-*
+.DS_Store
