@@ -1,4 +1,7 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    exit('CLI only');
+}
 // Minimal SMTP server for tests: php fake_smtp.php <port> <outfile>
 [$self, $port, $out] = $argv;
 $srv = stream_socket_server("tcp://127.0.0.1:$port", $e, $s);

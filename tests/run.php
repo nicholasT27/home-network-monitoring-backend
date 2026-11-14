@@ -1,4 +1,7 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    exit('CLI only');
+}
 // Backend tests on an in-memory SQLite database:  php backend/tests/run.php
 require __DIR__ . '/../lib/monitor.php';
 require __DIR__ . '/../lib/http.php';
@@ -8,8 +11,20 @@ function check(string $name, bool $ok): void { global $fail; echo ($ok ? 'PASS' 
 
 $config = ['subnet' => '192.168.1.0/24', 'scan_mode' => 'live', 'alert_email' => '', 'alert_from' => 'x@y', 'smtp_host' => '', 'smtp_user' => '',
            'scan_target_s' => 120, 'auth_secret' => 's3cret', 'token_ttl_s' => 60];
-$pdo = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);
-$pdo->exec(file_get_contents(__DIR__ . '/../schema.sqlite.sql'));
+// Default: an in-memory SQLite database. With TEST_DB_HOST set, the same tests run against that (empty) MySQL database.
+$pdoOptions = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
+if (getenv('TEST_DB_HOST') !== false) {
+    $pdo = new PDO(sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', getenv('TEST_DB_HOST'), getenv('TEST_DB_PORT') ?: '3306', getenv('TEST_DB_NAME')),
+        getenv('TEST_DB_USER'), getenv('TEST_DB_PASS') ?: '', $pdoOptions);
+    foreach ($pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) as $t) {
+        $pdo->exec("DROP TABLE `$t`");
+    }
+    mysql_ensure_schema($pdo);
+    echo "(running against MySQL)\n";
+} else {
+    $pdo = new PDO('sqlite::memory:', null, null, $pdoOptions);
+    $pdo->exec(file_get_contents(__DIR__ . '/../schema.sqlite.sql'));
+}
 $ms = fn() => (int) round(microtime(true) * 1000);
 $dev = fn($mac, $ip, $host = null) => ['mac' => $mac, 'ip' => $ip, 'hostname' => $host];
 $count = fn($sql) => (int) $pdo->query($sql)->fetchColumn();
@@ -26,6 +41,23 @@ check('private MAC detected', is_private_mac('DA:A1:19:00:00:01') && !is_private
 check('subnet normalised to network address', normalise_subnet(' 192.168.0.124/24 ') === '192.168.0.0/24');
 try { normalise_subnet('192.168.0.0/8'); $badSubnet = false; } catch (InvalidArgumentException $e) { $badSubnet = true; }
 check('too-large or invalid subnet rejected', $badSubnet);
+
+// --- database settings from different hosts' variable names, and the MySQL schema statements
+$envOf = fn(array $vars) => fn(string $n) => $vars[$n] ?? null;
+check('no database settings means SQLite (null)', parse_db_settings($envOf([])) === null);
+$d = parse_db_settings($envOf(['DB_HOST' => 'db.example.com', 'DB_NAME' => 'n', 'DB_USER' => 'u', 'DB_PASS' => 'p']));
+check('DB_HOST / DB_NAME / DB_USER / DB_PASS', $d['dsn'] === 'mysql:host=db.example.com;port=3306;dbname=n;charset=utf8mb4' && $d['user'] === 'u' && $d['pass'] === 'p');
+$d = parse_db_settings($envOf(['DB_HOST' => 'h', 'DB_PORT' => '3307', 'DB_DATABASE' => 'n2', 'DB_USERNAME' => 'u2', 'DB_PASSWORD' => 'p2']));
+check('Laravel-style DB_DATABASE / DB_USERNAME / DB_PASSWORD / DB_PORT', $d['dsn'] === 'mysql:host=h;port=3307;dbname=n2;charset=utf8mb4' && $d['user'] === 'u2' && $d['pass'] === 'p2');
+$d = parse_db_settings($envOf(['MYSQL_HOST' => 'mh', 'MYSQL_DATABASE' => 'mn', 'MYSQL_USER' => 'mu', 'MYSQL_PASSWORD' => 'mp']));
+check('MYSQL_* names', $d['dsn'] === 'mysql:host=mh;port=3306;dbname=mn;charset=utf8mb4' && $d['user'] === 'mu' && $d['pass'] === 'mp');
+$d = parse_db_settings($envOf(['DATABASE_URL' => 'mysql://us%40er:p%3Aw@host.example.com:3310/app_db']));
+check('DATABASE_URL (with an encoded user and password)', $d['dsn'] === 'mysql:host=host.example.com;port=3310;dbname=app_db;charset=utf8mb4' && $d['user'] === 'us@er' && $d['pass'] === 'p:w');
+check('DB_DSN wins over the other names', parse_db_settings($envOf(['DB_DSN' => 'sqlite::memory:', 'DB_HOST' => 'x']))['dsn'] === 'sqlite::memory:');
+$st = schema_statements(file_get_contents(__DIR__ . '/../schema.shared-hosting.sql'));
+check('schema: six idempotent CREATE TABLE statements, no DROP', count($st) === 6
+    && count(array_filter($st, fn($x) => str_starts_with($x, 'CREATE TABLE IF NOT EXISTS '))) === 6
+    && count(array_filter($st, fn($x) => stripos($x, 'DROP') !== false)) === 0);
 
 // --- accounts and tokens
 $alice = create_user($pdo, 'Alice@Example.com', 'password-alice');

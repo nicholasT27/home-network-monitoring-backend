@@ -1,12 +1,29 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    exit('CLI only');
+}
 // API tests over HTTP:  php backend/tests/api.php
 // Starts PHP's built-in server on a temporary SQLite database and calls every endpoint.
 $port = 20000 + random_int(0, 9000);
 $db = sys_get_temp_dir() . "/netmon_api_test_$port.sqlite";
 @unlink($db);
 $root = dirname(__DIR__);
+// Default: a temporary SQLite database. With TEST_DB_HOST set, the tests run against that MySQL database instead
+// (its tables are dropped first, so use an empty test database; the backend then creates the tables itself).
+$mysql = getenv('TEST_DB_HOST') !== false;
+$dbEnv = ['DB_DSN' => "sqlite:$db"];
+if ($mysql) {
+    $dbEnv = ['DB_HOST' => getenv('TEST_DB_HOST'), 'DB_PORT' => getenv('TEST_DB_PORT') ?: '3306', 'DB_NAME' => getenv('TEST_DB_NAME'),
+              'DB_USER' => getenv('TEST_DB_USER'), 'DB_PASS' => getenv('TEST_DB_PASS') ?: ''];
+    $pdo = new PDO(sprintf('mysql:host=%s;port=%s;dbname=%s', $dbEnv['DB_HOST'], $dbEnv['DB_PORT'], $dbEnv['DB_NAME']), $dbEnv['DB_USER'], $dbEnv['DB_PASS']);
+    $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+    foreach ($pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) as $t) {
+        $pdo->exec("DROP TABLE `$t`");
+    }
+    echo "(running against MySQL at {$dbEnv['DB_HOST']}:{$dbEnv['DB_PORT']})\n";
+}
 $srv = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", '-t', $root], [1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes, $root,
-    ['DB_DSN' => "sqlite:$db", 'SCAN_MODE' => 'demo', 'AUTH_SECRET' => 'test-secret', 'PATH' => getenv('PATH')]);
+    $dbEnv + ['SCAN_MODE' => 'demo', 'AUTH_SECRET' => 'test-secret', 'PATH' => getenv('PATH')]);
 register_shutdown_function(function () use ($srv, $db) { proc_terminate($srv); @unlink($db); @unlink("$db-wal"); @unlink("$db-shm"); });
 usleep(700000);
 
@@ -28,6 +45,10 @@ function call(string $action, string $method = 'GET', ?array $body = null, array
     return [$code, json_decode((string) $out, true), $http_response_header ?? []];
 }
 function auth(string $token): array { return ["X-Auth-Token: $token"]; }
+
+// --- the setup diagnostic is off unless DEBUG=1
+[$c] = call('health');
+check('health diagnostic is off by default (needs sign-in like any other action)', $c === 401);
 
 // --- accounts
 [$c] = call('status');

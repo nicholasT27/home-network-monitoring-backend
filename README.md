@@ -55,11 +55,12 @@ Settings come from `.env` next to `index.php`, or from real environment variable
 
 | Variable | Purpose |
 |---|---|
-| `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` (or `DB_DSN`) | MySQL. If none is set, a SQLite file (`data/monitor.sqlite`) is used |
+| `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS` (or `DB_DSN`, or `DATABASE_URL`; `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `MYSQL_*` also work) | MySQL, tables created automatically. If none is set, a SQLite file (`data/monitor.sqlite`) is used |
 | `SCAN_MODE` | `agent` (home agents scan; use on a web host), `live` (this server scans its own network), `demo` (simulated devices) |
 | `AUTH_SECRET` | long random string that signs login tokens. **Change it.** |
 | `ALLOW_REGISTRATION` | `0` closes sign-ups |
 | `ALLOWED_ORIGINS` | address(es) of the dashboard allowed to call the API (CORS), comma separated |
+| `DEBUG` | `1` switches on the `?action=health` setup diagnostic (names of settings, never values). Keep it off |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` | sender account for alert emails |
 | `SUBNET` | default network range (each user sets their own in the dashboard) |
 
@@ -68,13 +69,30 @@ Settings come from `.env` next to `index.php`, or from real environment variable
 You need a host with **PHP 8.0+, MySQL, phpMyAdmin and HTTPS** (a file manager or FTP to upload). Read "Choosing a host" below first.
 
 1. **Create a MySQL database** in the host's control panel and note the database host, name, user and password.
-2. **Create the tables:** in phpMyAdmin select the database, click **Import**, and import **`schema.shared-hosting.sql`**. Six tables appear. (`schema.sql` is the same but also creates a database, for a server where you are allowed to.)
+2. **Create the tables.** On MySQL the backend creates its six tables by itself the first time it runs, so this step is optional. To do it by hand: in phpMyAdmin select the database, click **Import**, and import **`schema.shared-hosting.sql`**. (`schema.sql` is the same but also creates a database, for a server where you are allowed to.)
 3. **Upload** the contents of this repository (the files, not the outer folder; `tests/` is optional) into a folder on the host, for example `public_html/api/`.
 4. **Create `.env`** in that folder (copy `.env.example`, a plain file named `.env`, not `.env.txt`) with the database values, `SCAN_MODE=agent`, a long random `AUTH_SECRET`, and `ALLOWED_ORIGINS` set to your dashboard address (for example `https://home-network-monitoring-frontend.pages.dev`).
 5. **Check it:**
    - `https://your-site/api/index.php?action=status` must show `{"error":"Not signed in"}`.
    - `https://your-site/api/.env` must show **403 / Forbidden / Not found**. If it shows the file's contents, the host ignores `.htaccess`: delete the file and set the same names as environment variables in the host's panel.
 6. **Tell the dashboard where the backend is:** in the frontend repository (Cloudflare Pages) set `VITE_API_BASE_URL=https://your-site/api` and redeploy.
+
+### Deploy on Wasmer Edge (free tier)
+
+Wasmer Edge runs PHP apps and can provide a MySQL database. A test app on its free plan reported PHP 8.3 with `pdo_mysql`, `openssl` and `curl` available, which is what this backend needs. These steps follow Wasmer's current dashboard and have **not** been tried end to end; if a screen differs, follow Wasmer's PHP guide (https://docs.wasmer.io/edge/guides/php).
+
+1. Sign in at https://wasmer.io (with GitHub) and choose **Deploy an app** → **Import from GitHub** → this repository.
+2. On **Configure your app** keep the preset **php** and PHP **8.3**. Under **Show advanced settings** look for the database option and **enable the database** (Wasmer provisions MySQL for the app and gives it connection variables). Click **Deploy**.
+3. Open the app's **Settings → Environment variables** and add:
+   - `SCAN_MODE` = `agent`
+   - `AUTH_SECRET` = a long random sentence
+   - `ALLOWED_ORIGINS` = the dashboard address (for example `https://home-network-monitoring-frontend.pages.dev`)
+   - Only if Wasmer did **not** provide database variables itself: `DATABASE_URL` = `mysql://USER:PASSWORD@HOST:PORT/NAME` (from the database details), or `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`. The backend also understands the names `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `MYSQL_*`.
+   - Optional email: the `SMTP_*` values from `.env.example`.
+4. Redeploy, then open `https://YOUR-APP.wasmer.app/index.php?action=status`. You should see `{"error":"Not signed in"}`. The tables are created on that first request.
+5. In the dashboard (Cloudflare Pages) set `VITE_API_BASE_URL` to `https://YOUR-APP.wasmer.app` (no `/api`, no trailing slash) and redeploy it.
+
+If you see `{"error":"Database error…"}`: add `DEBUG` = `1`, open `https://YOUR-APP.wasmer.app/index.php?action=health`, and read it. It lists which database settings exist (names only, never values) and the connection error. **Remove `DEBUG` again afterwards.** Do not use SQLite on Wasmer: its files are not kept between restarts.
 
 ### Choosing a host
 
@@ -108,6 +126,7 @@ Users type their own address in the dashboard (Network & alerts) and can send a 
 ## Tests
 
 ```bash
+# add TEST_DB_HOST, TEST_DB_PORT, TEST_DB_NAME, TEST_DB_USER, TEST_DB_PASS to run either command against an empty MySQL database
 php tests/run.php      # unit tests: ARP parsing, accounts, isolation, alerts, MAC rotation, spoofing, scan lock, agent, SMTP, env config
 php tests/api.php      # HTTP tests: every endpoint, accounts, agent, CORS (starts its own server on a temporary database)
 ```
@@ -116,7 +135,7 @@ php tests/api.php      # HTTP tests: every endpoint, accounts, agent, CORS (star
 
 ```
 index.php            entry point; sends each request to a handler in routes/
-routes/              auth, agent, account, devices, alerts, scan
+routes/              auth, agent, account, devices, alerts, scan, health
 lib/                 db, http (CORS, tokens), users, scanner, monitor, mailer, vendor (manufacturer lookup)
 agent.php            the home agent          cli_scan.php   scheduled scan for SCAN_MODE=live
 router.php           API-only server for local use

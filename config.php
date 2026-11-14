@@ -23,17 +23,20 @@ function load_env_file(string $path): array
 }
 
 $file = load_env_file(__DIR__ . '/.env');
+require_once __DIR__ . '/lib/db.php';
 $env = function (string $name) use ($file): ?string {
-    $v = getenv($name);
-    if ($v !== false && $v !== '') {
-        return $v;
+    // Hosts expose environment variables in different ways: getenv(), $_ENV or $_SERVER.
+    foreach ([getenv($name), $_ENV[$name] ?? false, $_SERVER[$name] ?? false] as $v) {
+        if (is_string($v) && $v !== '') {
+            return $v;
+        }
     }
     return ($file[$name] ?? '') !== '' ? $file[$name] : null;
 };
 
 $config = [
     // Default: a SQLite file, created automatically on first use (no database server needed).
-    // For MySQL set DB_HOST (and DB_NAME, DB_USER, DB_PASS), or DB_DSN.
+    // For MySQL set DB_HOST (and DB_NAME, DB_USER, DB_PASS), or DATABASE_URL, or DB_DSN; the tables are created automatically.
     'db_dsn'       => 'sqlite:' . __DIR__ . '/data/monitor.sqlite',
     'db_user'      => null,
     'db_pass'      => null,
@@ -52,6 +55,8 @@ $config = [
 
     // People create their own accounts in the dashboard. Set ALLOW_REGISTRATION=0 to close sign-ups.
     'allow_registration' => true,
+    // DEBUG=1 switches on the /index.php?action=health diagnostic (names of settings, never their values). Keep it off.
+    'debug'        => false,
     'auth_secret'  => 'change-this-long-random-string',
     'token_ttl_s'  => 43200,
 
@@ -69,7 +74,7 @@ $config = [
 ];
 
 $map = [
-    'db_dsn' => 'DB_DSN', 'db_user' => 'DB_USER', 'db_pass' => 'DB_PASS', 'subnet' => 'SUBNET', 'scan_mode' => 'SCAN_MODE',
+    'subnet' => 'SUBNET', 'scan_mode' => 'SCAN_MODE',
     'auth_secret' => 'AUTH_SECRET', 'alert_email' => 'ALERT_EMAIL', 'alert_from' => 'ALERT_FROM',
     'smtp_host' => 'SMTP_HOST', 'smtp_port' => 'SMTP_PORT', 'smtp_secure' => 'SMTP_SECURE',
     'smtp_user' => 'SMTP_USER', 'smtp_pass' => 'SMTP_PASS',
@@ -80,16 +85,17 @@ foreach ($map as $key => $name) {
         $config[$key] = $v;
     }
 }
-// Convenience for hosts that give separate database settings instead of a DSN.
-if ($env('DB_DSN') === null && ($host = $env('DB_HOST')) !== null) {
-    $config['db_dsn'] = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $env('DB_PORT') ?? '3306', $env('DB_NAME') ?? 'home_network_monitor');
-    $config['db_user'] = $env('DB_USER') ?? 'root';
-    $config['db_pass'] = $env('DB_PASS') ?? '';
+// Database: a DSN, a URL, or separate values under any of the names hosts use (see parse_db_settings in lib/db.php).
+if (($db = parse_db_settings($env)) !== null) {
+    $config['db_dsn'] = $db['dsn'];
+    $config['db_user'] = $db['user'];
+    $config['db_pass'] = $db['pass'];
 }
 if (($origins = $env('ALLOWED_ORIGINS')) !== null) {
     $config['allowed_origins'] = array_merge($config['allowed_origins'], array_map('trim', explode(',', $origins)));
 }
 $config['smtp_port'] = (int) $config['smtp_port'];
+$config['debug'] = filter_var($env('DEBUG') ?? '0', FILTER_VALIDATE_BOOLEAN);
 if (($reg = $env('ALLOW_REGISTRATION')) !== null) {
     $config['allow_registration'] = filter_var($reg, FILTER_VALIDATE_BOOLEAN);
 }

@@ -4,7 +4,7 @@
 $config = require __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/monitor.php';
-foreach (['auth', 'agent', 'account', 'devices', 'alerts', 'scan'] as $routeFile) {
+foreach (['auth', 'agent', 'account', 'devices', 'alerts', 'scan', 'health'] as $routeFile) {
     require_once __DIR__ . "/routes/$routeFile.php";
 }
 
@@ -21,6 +21,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 const USER_ACTIONS = ['status', 'devices', 'scan', 'alerts', 'alert_ack', 'device_update', 'device_delete', 'history', 'settings', 'test_email'];
 
 try {
+    // Setup diagnostic (only when DEBUG=1); it must work even when the database does not
+    if ($action === 'health' && $config['debug']) {
+        route_health($config);
+    }
+
     $pdo = db_connect($config);
 
     // Public: create an account / sign in
