@@ -11,6 +11,10 @@ if (PHP_SAPI !== 'cli') {
 $config = require __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/scanner.php';
 
+if ($config['agent_api_url'] !== '' && !preg_match('#^https?://[^/\s]+#i', $config['agent_api_url'])) {
+    fwrite(STDERR, "AGENT_API_URL must start with https:// (check the .env file next to agent.php).\n");
+    exit(1);
+}
 if ($config['agent_api_url'] === '' || $config['agent_key'] === '') {
     fwrite(STDERR, "Set AGENT_API_URL and AGENT_KEY first (see backend/.env.example).\n");
     exit(1);
@@ -28,13 +32,14 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
         }
         $out = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $err = curl_error($ch);   // empty when the request itself worked
     } else {   // PHP without the curl extension: use plain streams (https needs the openssl extension)
         $ctx = stream_context_create(['http' => [
             'method' => $body !== null ? 'POST' : 'GET', 'header' => implode("\r\n", $headers),
             'content' => $body !== null ? json_encode($body) : '', 'timeout' => 30, 'ignore_errors' => true,
         ]]);
         $out = @file_get_contents($url, false, $ctx);
+        $err = $out === false ? (error_get_last()['message'] ?? 'request failed') : '';
         $code = 0;
         foreach ($http_response_header ?? [] as $h) {
             if (preg_match('#^HTTP/\S+\s+(\d{3})#', $h, $m)) $code = (int) $m[1];
@@ -42,7 +47,9 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
     }
     $data = json_decode((string) $out, true);
     if ($code !== 200 || !is_array($data)) {
-        fwrite(STDERR, "[" . date('H:i:s') . "] API error $action ($code): " . substr((string) $out, 0, 200) . "\n");
+        // Code 0 means no reply at all (wrong address, no internet, certificate problem), so say why.
+        $why = $code === 0 ? "could not connect to {$config['agent_api_url']}" . ($err !== '' ? " ($err)" : '') : substr((string) $out, 0, 200);
+        fwrite(STDERR, "[" . date('H:i:s') . "] API error $action ($code): $why\n");
         return null;
     }
     return $data;
