@@ -64,6 +64,41 @@ function ping_sweep(array $ips, int $batch = 64): array
     return $alive;
 }
 
+// Clears this computer's ARP cache so that, after the ping sweep, an entry only exists if that device answered an ARP
+// request during this scan. ARP cannot be blocked by a device's firewall, so this finds devices that ignore pings
+// (for example a Windows laptop). It needs administrator rights: sudo on macOS and Linux, an Administrator terminal
+// on Windows. Returns true only when the cache was really cleared; otherwise the scan works as before.
+function flush_arp_cache(): bool
+{
+    if (is_windows()) {
+        $cmd = 'arp -d * 2>&1';
+    } else {
+        $uid = function_exists('posix_geteuid') ? posix_geteuid() : (int) trim((string) shell_exec('id -u'));
+        if ($uid !== 0) {
+            return false;
+        }
+        $cmd = PHP_OS_FAMILY === 'Darwin' ? 'arp -d -a 2>&1' : 'ip neigh flush all 2>&1';
+    }
+    $out = [];
+    $code = 1;
+    @exec($cmd, $out, $code);
+    return $code === 0 && !preg_match('/elevat|denied|not permitted|failed|not found/i', implode(' ', $out));
+}
+
+// Which addresses count as online now. A ping reply always counts. After a successful cache flush, an ARP entry
+// also counts: it can only be there because the device answered an ARP request during this scan. Without the
+// flush an entry could be a stale leftover (they last about 20 minutes), so only a ping reply is trusted.
+function online_ips(array $pingReplies, array $arpEntries, bool $cacheFlushed): array
+{
+    $alive = $pingReplies;
+    if ($cacheFlushed) {
+        foreach ($arpEntries as $ip => $mac) {
+            $alive[$ip] = true;
+        }
+    }
+    return $alive;
+}
+
 function normalise_mac(string $mac): string
 {
     return strtoupper(str_replace('-', ':', $mac));
@@ -107,16 +142,22 @@ function resolve_hostname(string $ip): ?string
 }
 
 // Returns [['mac' => ..., 'ip' => ..., 'hostname' => ..., 'alive' => bool], ...]. 'alive' is false for devices
-// that are only a (possibly stale) ARP-cache entry and did not answer a ping.
+// that are only a (possibly stale) ARP-cache entry and did not answer a ping (unless the ARP cache was flushed, see online_ips).
 function scan_network(array $config, ?int $deadline = null, int $demoRound = 1): array
 {
     if (($config['scan_mode'] ?? 'live') === 'demo') {
         return demo_scan($demoRound);
     }
     $cidr = $config['subnet'];
-    $alive = ping_sweep(cidr_hosts($cidr));
+    $flushed = flush_arp_cache();
+    $pinged = ping_sweep(cidr_hosts($cidr));   // also makes every device on the LAN answer (or ignore) an ARP request
+    if ($flushed) {
+        usleep(500000);   // let late ARP answers arrive
+    }
+    $arp = read_arp_cache($cidr);
+    $alive = online_ips($pinged, $arp, $flushed);
     $devices = [];
-    foreach (read_arp_cache($cidr) as $ip => $mac) {
+    foreach ($arp as $ip => $mac) {
         // Skip reverse-DNS lookups if the time budget is nearly spent, so the scan still finishes.
         $skipDns = $deadline !== null && time() > $deadline;
         $devices[] = ['mac' => $mac, 'ip' => $ip, 'hostname' => $skipDns ? null : resolve_hostname($ip), 'alive' => isset($alive[$ip])];

@@ -78,6 +78,9 @@ if (in_array('--once', $argv, true)) {
 }
 
 echo "Home agent running, API {$config['agent_api_url']}. Ctrl+C to stop.\n";
+echo flush_arp_cache()
+    ? "ARP check: ON (devices that ignore pings are found by their ARP answer).\n"
+    : "ARP check: OFF. Run the agent with sudo (Windows: an Administrator terminal) to also find devices that ignore pings.\n";
 $last = 0;
 while (true) {
     $poll = agent_call($config, 'agent_poll');
