@@ -117,6 +117,8 @@ If you see `{"error":"Database error…"}`: add `DEBUG` = `1`, open `https://YOU
 4. Run it and leave the window open (Windows: `C:\xampp\php\php.exe agent.php`; Mac with XAMPP: `/Applications/XAMPP/xamppfiles/bin/php agent.php`; otherwise `php agent.php`). The panel turns **Online** within seconds.
 5. In the dashboard enter the network range (the computer's IP with the last number as 0, e.g. `192.168.0.0/24`), then click **Scan now**.
 
+For the best results run the agent with administrator rights: `sudo php agent.php` on Mac and Linux, or from an Administrator terminal on Windows. The agent then clears the computer's ARP cache before each scan, so a device counts as online when it answers an ARP request, which a firewall cannot block. This finds devices that ignore pings (for example a Windows laptop with its firewall on). Without administrator rights the agent still works, but such devices show as offline. When it starts, the agent prints `ARP check: ON` or `ARP check: OFF`.
+
 The agent scans on request and every two minutes, so alerts arrive even when the dashboard is closed. `php agent.php --once` scans once and exits. For `SCAN_MODE=live` (the backend itself at home) schedule `php cli_scan.php` every two minutes instead.
 
 ## Email alerts
