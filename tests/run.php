@@ -43,6 +43,10 @@ $arpNow = ['192.168.1.5' => 'AA:AA:AA:00:00:05', '192.168.1.9' => 'AA:AA:AA:00:0
 check('without a cache flush only ping replies count as online', online_ips($pings, $arpNow, false) === ['192.168.1.5' => true]);
 check('after a cache flush a device that only answered ARP counts as online', online_ips($pings, $arpNow, true) === ['192.168.1.5' => true, '192.168.1.9' => true]);
 check('after a cache flush no ARP entry means offline', online_ips([], [], true) === []);
+$t0 = microtime(true);
+arp_probe([], 3, 1000);
+arp_probe(['127.0.0.1'], 2, 1000);
+check('ARP probe pass runs without error and ends quickly', microtime(true) - $t0 < 2);
 check('cidr_hosts /24 has 254 hosts', count(cidr_hosts('192.168.1.0/24')) === 254);
 check('private MAC detected', is_private_mac('DA:A1:19:00:00:01') && !is_private_mac('3C:5A:B4:11:22:33'));
 check('subnet normalised to network address', normalise_subnet(' 192.168.0.124/24 ') === '192.168.0.0/24');

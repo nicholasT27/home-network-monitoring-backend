@@ -64,6 +64,24 @@ function ping_sweep(array $ips, int $batch = 64): array
     return $alive;
 }
 
+// Second pass after the ping sweep: asks the network "who has this address?" again for every address that did not answer
+// the ping. Sending a tiny UDP packet makes this computer broadcast an ARP request, which does not depend on ping and
+// cannot be blocked by a device's firewall. A device that is asleep or slow gets several tries over a few seconds.
+// Only the ARP cache is read afterwards, so this function just sends the probes and waits between the rounds.
+function arp_probe(array $ips, int $rounds = 3, int $pauseUs = 700000): void
+{
+    for ($r = 0; $r < $rounds && $ips; $r++) {
+        foreach ($ips as $ip) {
+            $sock = @stream_socket_client('udp://' . $ip . ':9', $errno, $errstr, 1);
+            if ($sock) {
+                @fwrite($sock, 'x');
+                fclose($sock);
+            }
+        }
+        usleep($pauseUs);   // let the ARP answers arrive
+    }
+}
+
 // Clears this computer's ARP cache so that, after the ping sweep, an entry only exists if that device answered an ARP
 // request during this scan. ARP cannot be blocked by a device's firewall, so this finds devices that ignore pings
 // (for example a Windows laptop). It needs administrator rights: sudo on macOS and Linux, an Administrator terminal
@@ -150,9 +168,10 @@ function scan_network(array $config, ?int $deadline = null, int $demoRound = 1):
     }
     $cidr = $config['subnet'];
     $flushed = flush_arp_cache();
-    $pinged = ping_sweep(cidr_hosts($cidr));   // also makes every device on the LAN answer (or ignore) an ARP request
+    $pinged = ping_sweep(cidr_hosts($cidr));   // pass 1: ping sweep (a ping also makes the device answer or ignore an ARP request)
     if ($flushed) {
-        usleep(500000);   // let late ARP answers arrive
+        // Pass 2: ping sweep is done; now ask ARP again for every address that did not answer the ping.
+        arp_probe(array_values(array_filter(cidr_hosts($cidr), fn($ip) => !isset($pinged[$ip]))));
     }
     $arp = read_arp_cache($cidr);
     $alive = online_ips($pinged, $arp, $flushed);
