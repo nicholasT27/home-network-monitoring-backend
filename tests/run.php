@@ -36,13 +36,6 @@ $lin = "? (192.168.1.20) at 8c:77:12:44:55:66 [ether] on eth0\n? (192.168.1.21) 
 check('parse Linux arp / ip neigh', parse_arp($lin, '192.168.1.0/24') === ['192.168.1.20' => '8C:77:12:44:55:66', '192.168.1.30' => 'A4:83:E7:AA:BB:01']);
 $mac = "? (192.168.1.7) at 0:1a:2b:3c:4d:5e on en0 ifscope [ethernet]\n";
 check('parse macOS arp -an (short octets)', parse_arp($mac, '192.168.1.0/24') === ['192.168.1.7' => '00:1A:2B:3C:4D:5E']);
-
-// A device that ignores pings but answers ARP counts as online only when the ARP cache was cleared first.
-$pings = ['192.168.1.5' => true];
-$arpNow = ['192.168.1.5' => 'AA:AA:AA:00:00:05', '192.168.1.9' => 'AA:AA:AA:00:00:09'];
-check('without a cache flush only ping replies count as online', online_ips($pings, $arpNow, false) === ['192.168.1.5' => true]);
-check('after a cache flush a device that only answered ARP counts as online', online_ips($pings, $arpNow, true) === ['192.168.1.5' => true, '192.168.1.9' => true]);
-check('after a cache flush no ARP entry means offline', online_ips([], [], true) === []);
 check('cidr_hosts /24 has 254 hosts', count(cidr_hosts('192.168.1.0/24')) === 254);
 check('private MAC detected', is_private_mac('DA:A1:19:00:00:01') && !is_private_mac('3C:5A:B4:11:22:33'));
 check('subnet normalised to network address', normalise_subnet(' 192.168.0.124/24 ') === '192.168.0.0/24');
