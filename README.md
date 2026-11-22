@@ -12,10 +12,44 @@ Home computer (agent.php) ──HTTPS, outgoing only──►  Backend: PHP API 
 
 A website cannot see inside a home network, so a small **agent** runs on a computer at home, scans the network and uploads the result to this backend. The backend recognises devices by MAC address, tells Trusted from Unknown, raises alerts and emails them.
 
+## Quick start: download and operate the system
+
+The system has three parts: the **dashboard** (a web page), the **backend** (PHP and MySQL, already running online) and the **home agent** (a small program that runs on one computer at home and scans the network). To use it you only need the dashboard and the agent.
+
+**Links**
+
+| What | Address |
+|---|---|
+| Dashboard (live) | https://home-network-monitoring-frontend.pages.dev |
+| Backend (live API) | https://home-network-monitoring-backend.wasmer.app |
+| Dashboard source code | https://github.com/nicholasT27/home-network-monitoring-frontend |
+| Backend and agent source code (this repository) | https://github.com/nicholasT27/home-network-monitoring-backend |
+
+**What you need:** a computer at home that stays on and is connected to the home Wi-Fi or router (Windows, Mac or Linux), a web browser, and PHP 8 or later.
+
+**Step by step**
+
+1. **Install PHP 8 or later** on the home computer. Check it with `php -v` in a terminal. (Windows: install XAMPP or download PHP from php.net. Mac: `brew install php`.)
+2. **Download this repository.** On this page click the green **Code** button, then **Download ZIP**, and unzip it. (Or run `git clone https://github.com/nicholasT27/home-network-monitoring-backend.git`.)
+3. **Open the dashboard** at the address above and click **Create an account** (or sign in).
+4. **Set the network range.** In the **Network & alerts** panel type your network range and click **Save network**. To find it, take your computer's IP address (Mac: System Settings > Wi-Fi > Details > TCP/IP, or `ipconfig getifaddr en0`; Windows: `ipconfig`), keep the first three numbers and end with `.0/24`. For example `192.168.0.151` gives `192.168.0.0/24`.
+5. **Set the alert email.** Type the address that should receive alerts, click **Save email**, then **Send test email** to check it arrives.
+6. **Connect the agent.** In the **Home agent** panel click **Copy**. In the folder you unzipped, create a file named `.env` (copy `agent.env.example`), paste the two lines (`AGENT_API_URL` and `AGENT_KEY`) and save it.
+7. **Start the agent** in a terminal opened in that folder and leave the window open:
+   - Mac or Linux: `sudo php agent.php`
+   - Windows: open the terminal **as Administrator**, then `php agent.php`
+
+   The first line should say `ARP check: ON`. (Without administrator rights it says `ARP check: OFF` and still works, but devices that ignore pings are missed.) The Home agent panel turns **Online** within seconds.
+8. **Scan.** Click **Scan now**. Every device found is listed. Click **Trust** on the devices you recognise; anything you do not recognise stays **Unknown**. After the first scan, a new unknown device raises an alert in the dashboard and an email, and scans repeat by themselves every two minutes.
+
+**Using the dashboard:** the four tiles show counts (devices, online, trusted, unknown, suspicious); the filter buttons and search box narrow the device list; the pencil renames a device, the clock shows its history, the bin removes it; **Active alerts** lists new or suspicious devices with a **Dismiss** button; **Recent activity** is a timeline of devices coming and going.
+
+**Stop:** press `Ctrl+C` in the agent's terminal. The dashboard then shows the agent as Offline.
+
 ## What it does
 
 - **Accounts:** sign-up and sign-in; every record belongs to one account and cannot be seen by another (signed login tokens, hashed passwords).
-- **Discovery:** the agent pings every address in the account's network range (which makes active devices answer and fills the ARP cache), then reads the ARP list for MAC addresses. A device counts as **online** only if it answered the ping.
+- **Discovery:** the agent pings every address in the account's network range (which makes active devices answer and fills the ARP cache), then reads the ARP list for MAC addresses. A device counts as **online** if it answered the ping or, when the agent runs with administrator rights, a fresh ARP request (an old ARP entry alone never counts).
 - **Alerts:** a new MAC address becomes **Unknown** and raises one alert (dashboard + email). A trusted device whose hostname or manufacturer changes is marked **Suspicious**. A trusted phone that rotates its private MAC address is recognised by its hostname, without a false alarm. The first scan is a baseline with a single summary alert. IP address changes are logged, not alerted.
 - **History:** first seen, came online, went offline, IP changed, MAC rotated.
 - **Email:** sent through an SMTP account (for example Gmail with an app password).
@@ -149,6 +183,6 @@ tests/               run.php, api.php
 
 ## Limits
 
-IPv4 ranges from /22 to /30 only; the manufacturer lookup is a small built-in table (`lib/vendor.php`); devices that ignore pings (for example a sleeping phone) can appear offline while connected; MAC randomisation is handled by hostname matching; the agent must keep running at home.
+IPv4 ranges from /22 to /30 only; the manufacturer lookup is a small built-in table (`lib/vendor.php`); a device in deep sleep that answers neither a ping nor an ARP request can appear offline while connected, and without administrator rights devices that ignore pings are missed; MAC randomisation is handled by hostname matching; the agent must keep running at home.
 
 Part of the CSN project "Home Network Device Monitoring and Alert System" (Wawasan Open University).
