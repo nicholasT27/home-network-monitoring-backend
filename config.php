@@ -1,9 +1,9 @@
 <?php
 // Settings come from, lowest to highest priority:
 //   1. the defaults below
-//   2. backend/.env (local development)        3. real environment variables (cloud host settings)
-//   4. backend/config.local.php (optional, local only)
-// See backend/.env.example for the variable names.
+//   2. the .env file next to this file (local use)
+//   3. real environment variables (the settings panel of a web host)
+// See .env.example for the variable names.
 
 function load_env_file(string $path): array
 {
@@ -41,9 +41,8 @@ $config = [
     'db_user'      => null,
     'db_pass'      => null,
 
-    // Network range to scan (CIDR, at most 1024 hosts). A cloud server can only scan its own network,
-    // so use scan_mode "demo" when deployed away from the home network.
-    'subnet'       => '192.168.1.0/24',   // default range; each user can set their own in the dashboard
+    // Default network range to scan (CIDR, at most 1024 hosts); each user sets their own in the dashboard.
+    'subnet'       => '192.168.1.0/24',
     // 'live'  = this server scans its own network (run the backend at home)
     // 'agent' = each user's home agent (agent.php) scans and sends results here (use this when deployed to the cloud)
     // 'demo'  = simulated devices
@@ -63,9 +62,8 @@ $config = [
     'allowed_origins' => ['http://localhost:5173', 'http://127.0.0.1:5173',
                           'http://localhost:4173', 'http://127.0.0.1:4173'],
 
-    // Email alerts. The recipient is entered in the dashboard; the sender is an SMTP account (e.g. Gmail).
-    'alert_email'  => '',
-    'alert_from'   => '',
+    // Email alerts. Each user enters the recipient in the dashboard; the sender is one SMTP account (e.g. Gmail).
+    'alert_from'   => '',             // sender address; defaults to smtp_user
     'smtp_host'    => '',            // e.g. smtp.gmail.com; empty = fall back to PHP mail()
     'smtp_port'    => 465,
     'smtp_secure'  => 'ssl',         // 'ssl' or 'none'
@@ -75,7 +73,7 @@ $config = [
 
 $map = [
     'subnet' => 'SUBNET', 'scan_mode' => 'SCAN_MODE',
-    'auth_secret' => 'AUTH_SECRET', 'alert_email' => 'ALERT_EMAIL', 'alert_from' => 'ALERT_FROM',
+    'auth_secret' => 'AUTH_SECRET', 'alert_from' => 'ALERT_FROM',
     'smtp_host' => 'SMTP_HOST', 'smtp_port' => 'SMTP_PORT', 'smtp_secure' => 'SMTP_SECURE',
     'smtp_user' => 'SMTP_USER', 'smtp_pass' => 'SMTP_PASS',
     'agent_api_url' => 'AGENT_API_URL', 'agent_key' => 'AGENT_KEY', 'agent_interval_s' => 'AGENT_INTERVAL_S',
@@ -101,8 +99,4 @@ if (($reg = $env('ALLOW_REGISTRATION')) !== null) {
 }
 $config['agent_interval_s'] = max(30, (int) $config['agent_interval_s']);
 
-$local = __DIR__ . '/config.local.php';
-if (is_file($local)) {
-    $config = array_merge($config, require $local);
-}
 return $config;

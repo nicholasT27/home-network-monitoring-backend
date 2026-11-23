@@ -3,7 +3,7 @@
 // Run it on an always-on computer inside the home network:
 //   php agent.php          keep running: scans when the dashboard asks, and every AGENT_INTERVAL_S seconds
 //   php agent.php --once   scan once and exit
-// Settings (env vars or backend/.env): AGENT_API_URL, AGENT_KEY (both shown in your dashboard), AGENT_INTERVAL_S.
+// Settings (environment variables or a .env file next to this file): AGENT_API_URL, AGENT_KEY (both shown in your dashboard), AGENT_INTERVAL_S.
 // The network range to scan is the one you enter in the dashboard.
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
@@ -16,7 +16,7 @@ if ($config['agent_api_url'] !== '' && !preg_match('#^https?://[^/\s]+#i', $conf
     exit(1);
 }
 if ($config['agent_api_url'] === '' || $config['agent_key'] === '') {
-    fwrite(STDERR, "Set AGENT_API_URL and AGENT_KEY first (see backend/.env.example).\n");
+    fwrite(STDERR, "Set AGENT_API_URL and AGENT_KEY first (see agent.env.example).\n");
     exit(1);
 }
 

@@ -1,50 +1,140 @@
-# Home Network Monitor: Backend (API, scanner and home agent)
+# Home Network Monitor: Backend and Home Agent
 
-The server side of the **Home Network Device Monitoring and Alert System** (PHP). It stores each account's devices, applies the alert logic, sends alert emails, and includes the **home agent** that scans a home network.
+![Dashboard](docs/images/08-new-unknown-device.png)
 
-The dashboard that users see is a separate repository:
-**[home-network-monitoring-frontend](https://github.com/nicholasT27/home-network-monitoring-frontend)** (React, deployed on Cloudflare Pages).
+The server side of the **Home Network Device Monitoring and Alert System** (PHP + MySQL/SQLite). It stores each account's devices, applies the alert logic, sends alert emails, and includes the **home agent** that scans a home network. A student project for the CSN Project (TSN309/10) at Wawasan Open University.
+
+| Repository | What it is |
+|---|---|
+| **home-network-monitoring-backend** (this one) | PHP API, database code, alert emails and the home agent (`agent.php`) |
+| [home-network-monitoring-frontend](https://github.com/nicholasT27/home-network-monitoring-frontend) | the web dashboard (React) that people use in a browser |
+
+**Live system (for marking):** dashboard https://home-network-monitoring-frontend.pages.dev, backend https://home-network-monitoring-backend.wasmer.app. You can create an account there. To scan a real network you also run the home agent (steps below).
+
+## Contents
+
+1. [How it works](#how-it-works)
+2. [What you need](#what-you-need)
+3. [Install and run, option A: quick demo with simulated devices](#option-a-quick-demo-simulated-devices)
+4. [Install and run, option B: scan your own network on one computer](#option-b-scan-your-own-network-on-one-computer)
+5. [Install and run, option C: use the live system](#option-c-use-the-live-system-with-your-own-home-agent)
+6. [Using the dashboard](#using-the-dashboard)
+7. [What it does](#what-it-does), [API](#api), [Configuration](#configuration), [Email alerts](#email-alerts)
+8. [Deploy on a PHP web host](#deploy-on-a-php-web-host), [The home agent](#the-home-agent), [Tests](#tests), [Troubleshooting](#troubleshooting)
+
+## How it works
 
 ```
 Home computer (agent.php) ──HTTPS, outgoing only──►  Backend: PHP API + MySQL  ◄──HTTPS──  Dashboard (frontend repo)
  pings the network, reads the ARP list                (this repository)                      any browser
 ```
 
-A website cannot see inside a home network, so a small **agent** runs on a computer at home, scans the network and uploads the result to this backend. The backend recognises devices by MAC address, tells Trusted from Unknown, raises alerts and emails them.
+A website cannot see inside a home network, so a small **agent** runs on a computer at home, scans the network and uploads the result to this backend. The backend recognises devices by MAC address, tells **Trusted** from **Unknown**, raises alerts and emails them. The dashboard shows the result.
 
-## Quick start: download and operate the system
+A scan can start in two ways: you click **Scan now** (the backend saves a request and the agent picks it up within seconds), or the agent scans by itself every 2 minutes.
 
-The system has three parts: the **dashboard** (a web page), the **backend** (PHP and MySQL, already running online) and the **home agent** (a small program that runs on one computer at home and scans the network). To use it you only need the dashboard and the agent.
+## What you need
 
-**Links**
-
-| What | Address |
+| For | You need |
 |---|---|
-| Dashboard (live) | https://home-network-monitoring-frontend.pages.dev |
-| Backend (live API) | https://home-network-monitoring-backend.wasmer.app |
-| Dashboard source code | https://github.com/nicholasT27/home-network-monitoring-frontend |
-| Backend and agent source code (this repository) | https://github.com/nicholasT27/home-network-monitoring-backend |
+| Everything | **PHP 8.0 or newer** (with the `pdo_sqlite` extension; XAMPP, Homebrew `php`, or php.net). Check with `php -v` |
+| The dashboard (options A and B) | **Node.js 20.19+ or 22** ([nodejs.org](https://nodejs.org)). Check with `node -v` |
+| Option B and C (real scan) | a computer on the home Wi-Fi or router; on Mac or Linux it is best run with `sudo`, on Windows from an Administrator terminal |
+| Email alerts (optional) | a Gmail account with an app password, see [Email alerts](#email-alerts) |
 
-**What you need:** a computer at home that stays on and is connected to the home Wi-Fi or router (Windows, Mac or Linux), a web browser, and PHP 8 or later.
+Download both repositories: on each GitHub page click the green **Code** button, then **Download ZIP**, and unzip them side by side (or use `git clone`).
 
-**Step by step**
+## Option A: quick demo (simulated devices)
 
-1. **Install PHP 8 or later** on the home computer. Check it with `php -v` in a terminal. (Windows: install XAMPP or download PHP from php.net. Mac: `brew install php`.)
-2. **Download this repository.** On this page click the green **Code** button, then **Download ZIP**, and unzip it. (Or run `git clone https://github.com/nicholasT27/home-network-monitoring-backend.git`.)
-3. **Open the dashboard** at the address above and click **Create an account** (or sign in).
-4. **Set the network range.** In the **Network & alerts** panel type your network range and click **Save network**. To find it, take your computer's IP address (Mac: System Settings > Wi-Fi > Details > TCP/IP, or `ipconfig getifaddr en0`; Windows: `ipconfig`), keep the first three numbers and end with `.0/24`. For example `192.168.0.151` gives `192.168.0.0/24`.
-5. **Set the alert email.** Type the address that should receive alerts, click **Save email**, then **Send test email** to check it arrives.
-6. **Connect the agent.** In the **Home agent** panel click **Copy**. In the folder you unzipped, create a file named `.env` (copy `agent.env.example`), paste the two lines (`AGENT_API_URL` and `AGENT_KEY`) and save it.
-7. **Start the agent** in a terminal opened in that folder and leave the window open:
-   - Mac or Linux: `sudo php agent.php`
-   - Windows: open the terminal **as Administrator**, then `php agent.php`
+The fastest way to see the system working. No router, agent or email is needed: the backend invents a small household and, from the third scan, an intruder.
 
-   The first line should say `ARP check: ON`. (Without administrator rights it says `ARP check: OFF` and still works, but devices that ignore pings are missed.) The Home agent panel turns **Online** within seconds.
-8. **Scan.** Click **Scan now**. Every device found is listed. Click **Trust** on the devices you recognise; anything you do not recognise stays **Unknown**. After the first scan, a new unknown device raises an alert in the dashboard and an email, and scans repeat by themselves every two minutes.
+**1. Start the backend** (in the backend folder):
 
-**Using the dashboard:** the four tiles show counts (devices, online, trusted, unknown, suspicious); the filter buttons and search box narrow the device list; the pencil renames a device, the clock shows its history, the bin removes it; **Active alerts** lists new or suspicious devices with a **Dismiss** button; **Recent activity** is a timeline of devices coming and going.
+```bash
+cp .env.example .env        # Windows: copy .env.example .env
+```
 
-**Stop:** press `Ctrl+C` in the agent's terminal. The dashboard then shows the agent as Offline.
+Open `.env` and set `SCAN_MODE=demo`, then:
+
+```bash
+php -S 127.0.0.1:8081 router.php
+```
+
+Leave this window open. Check it: open http://127.0.0.1:8081/index.php?action=status in a browser. You should see `{"error":"Not signed in"}`.
+
+**2. Start the dashboard** (in the frontend folder, in a second terminal):
+
+```bash
+npm install
+cp .env.example .env        # Windows: copy .env.example .env  (it already points at http://127.0.0.1:8081)
+npm run dev
+```
+
+**3. Use it.** Open http://localhost:5173, click **Create an account**, then **Scan now** a few times. After the third scan a new Unknown device appears and an alert is raised. Click **Trust** on the devices you recognise.
+
+![Create an account](docs/images/02-create-account.png)
+
+## Option B: scan your own network on one computer
+
+This runs all three parts on one computer connected to your home network: the backend, the dashboard and the agent.
+
+**1. Backend.** In the backend folder copy `.env.example` to `.env`, set `SCAN_MODE=agent`, and set `AUTH_SECRET` to any long random sentence. Then:
+
+```bash
+php -S 127.0.0.1:8081 router.php
+```
+
+**2. Dashboard.** In the frontend folder (second terminal): `npm install`, copy `.env.example` to `.env`, then `npm run dev`. Open http://localhost:5173 and create an account.
+
+**3. Set your network range.** In the **Network & alerts** panel type your range and click **Save network**. To find it, take your computer's IP address (Mac: System Settings > Wi-Fi > Details > TCP/IP, or `ipconfig getifaddr en0`; Windows: `ipconfig`), keep the first three numbers and end with `.0/24`. For example `192.168.0.151` gives `192.168.0.0/24`.
+
+![Network and alerts panel](docs/images/03-network-and-email.png)
+
+**4. Connect the agent.** In the **Home agent** panel click **Copy**, then open the backend's `.env` file and add the two lines the panel shows (`AGENT_API_URL` and `AGENT_KEY`) at the end.
+
+![Home agent panel](docs/images/05-home-agent-panel.png)
+
+**5. Start the agent** (third terminal, in the backend folder) and leave it open:
+
+- Mac or Linux: `sudo php agent.php`
+- Windows: open the terminal **as Administrator**, then `php agent.php`
+
+The first line should say `ARP check: ON`. (Without administrator rights it says `ARP check: OFF`; the agent still works, but devices that ignore pings are missed.) The Home agent panel turns **Online** within seconds.
+
+**6. Scan.** Click **Scan now**. The dashboard shows "Scan requested. Waiting for the home agent…", then the result. Click **Trust** on the devices you recognise; anything you do not recognise stays **Unknown**.
+
+![Scan requested](docs/images/06-scan-waiting.png)
+![Scan finished](docs/images/07-scan-finished.png)
+
+## Option C: use the live system with your own home agent
+
+Use the already deployed dashboard and backend; you only run the agent.
+
+1. Install PHP 8 or newer and download this repository (green **Code** button, **Download ZIP**, unzip).
+2. Open https://home-network-monitoring-frontend.pages.dev, click **Create an account**, and sign in.
+3. Set the network range and alert email in the **Network & alerts** panel (see Option B, step 3).
+4. In the **Home agent** panel click **Copy**. In the unzipped folder create a file named `.env` (you can copy `agent.env.example`) and paste the two lines.
+5. Start the agent as in Option B, step 5. The panel turns **Online**; then click **Scan now**.
+
+Stop the agent with `Ctrl+C`; the dashboard then shows it as Offline. Closing the dashboard does not stop scanning: the agent keeps scanning every 2 minutes.
+
+## Using the dashboard
+
+| Area | What it does |
+|---|---|
+| Header | **Scan now** starts a scan; **Sign out** leaves. The line under the title shows your network range, the agent status and the last scan time |
+| Summary tiles | counts of devices, online, trusted, unknown and suspicious |
+| Devices | every device found; filters (All, Online, Unknown, Trusted, Suspicious) and a search box; **Trust/Untrust**, the pencil renames, the clock shows history, the bin removes it |
+| Home agent | shows Online or Offline and the two lines the agent needs |
+| Active alerts | a new Unknown or Suspicious device raises one alert (and an email); **Dismiss** clears it |
+| Recent activity | a timeline of devices coming online, going offline or changing address |
+| Network & alerts | save the network range and the alert email; **Send test email** checks the mail setup |
+
+![Dashboard with a new unknown device](docs/images/08-new-unknown-device.png)
+
+![Active alerts](docs/images/09-active-alerts.png)
+
+![Device list and history](docs/images/10-devices-and-history.png)
 
 ## What it does
 
@@ -69,19 +159,6 @@ One entry point: `index.php?action=<name>`. Requests and replies are JSON.
 | `test_email` | POST | signed in | send a test email to the saved address |
 | `scan` | POST | signed in | scan now (asks the home agent in `agent` mode) |
 | `agent_poll`, `agent_ingest` | GET, POST | the home agent (`X-Agent-Key`) | ask for work / upload scan results |
-
-## Run it locally (API only)
-
-You need **PHP 8.0 or newer** with the `pdo_sqlite` extension (XAMPP, Homebrew `php`, or php.net).
-
-```bash
-cp .env.example .env        # Windows: copy .env.example .env
-# in .env set SCAN_MODE=demo (or live) and leave the database lines commented out
-php -S 127.0.0.1:8081 router.php
-curl "http://127.0.0.1:8081/index.php?action=status"     # -> {"error":"Not signed in"}
-```
-
-Then run the dashboard (frontend repository) with `VITE_API_BASE_URL=http://127.0.0.1:8081`. `router.php` exposes only `index.php`; nothing else in this folder can be downloaded through it.
 
 ## Configuration
 
@@ -178,7 +255,8 @@ router.php           API-only server for local use
 config.php           reads .env / environment variables
 schema.shared-hosting.sql  schema.sql  schema.sqlite.sql
 .env.example  agent.env.example  .htaccess
-tests/               run.php, api.php
+tests/               run.php, api.php (and fake_smtp.php, a mail server for the tests)
+docs/images/         screenshots used in this README
 ```
 
 ## Limits
@@ -186,3 +264,15 @@ tests/               run.php, api.php
 IPv4 ranges from /22 to /30 only; the manufacturer lookup is a small built-in table (`lib/vendor.php`); a device in deep sleep that answers neither a ping nor an ARP request can appear offline while connected, and without administrator rights devices that ignore pings are missed; MAC randomisation is handled by hostname matching; the agent must keep running at home.
 
 Part of the CSN project "Home Network Device Monitoring and Alert System" (Wawasan Open University).
+
+## Troubleshooting
+
+| What you see | What to do |
+|---|---|
+| `php: command not found` | PHP is not installed or not on your PATH. Install PHP 8 and open a new terminal (Windows XAMPP: `C:\xampp\php\php.exe`) |
+| Dashboard says "Cannot reach the monitoring server" | The backend is not running, or `VITE_API_BASE_URL` in the frontend `.env` is wrong. Restart `npm run dev` after changing it |
+| Browser console shows a CORS error | Add the dashboard's address to `ALLOWED_ORIGINS` in the backend `.env` (`http://localhost:5173` is allowed by default) |
+| Home agent stays Offline | The agent is not running, or `AGENT_API_URL` / `AGENT_KEY` are wrong. Copy them again from the Home agent panel |
+| `ARP check: OFF` | Start the agent with `sudo` (Mac or Linux) or from an Administrator terminal (Windows) |
+| Scan finds 0 devices | The network range is wrong. Check the first three numbers against your computer's IP address |
+| No alert emails | Press **Send test email** and see [Email alerts](#email-alerts); alerts still appear in the dashboard |

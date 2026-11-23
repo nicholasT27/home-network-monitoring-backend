@@ -2,7 +2,7 @@
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
 }
-// API tests over HTTP:  php backend/tests/api.php
+// API tests over HTTP:  php tests/api.php
 // Starts PHP's built-in server on a temporary SQLite database and calls every endpoint.
 $port = 20000 + random_int(0, 9000);
 $db = sys_get_temp_dir() . "/netmon_api_test_$port.sqlite";

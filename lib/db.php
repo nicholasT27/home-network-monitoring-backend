@@ -102,17 +102,3 @@ function now(): string
 {
     return gmdate('Y-m-d H:i:s');   // all stored times are UTC; the dashboard converts to local time
 }
-
-function get_setting(PDO $pdo, string $key, string $default = ''): string
-{
-    $st = $pdo->prepare('SELECT v FROM settings WHERE k = ?');
-    $st->execute([$key]);
-    $v = $st->fetchColumn();
-    return $v === false ? $default : (string) $v;
-}
-
-function set_setting(PDO $pdo, string $key, string $value): void
-{
-    $pdo->prepare('DELETE FROM settings WHERE k = ?')->execute([$key]);
-    $pdo->prepare('INSERT INTO settings (k, v) VALUES (?, ?)')->execute([$key, $value]);
-}

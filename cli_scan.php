@@ -1,7 +1,7 @@
 <?php
 // Scheduled scan for every account, independent of the dashboard (SCAN_MODE=live or demo on this server).
 // Run from cron / Windows Task Scheduler, e.g. every 2 minutes:
-//   php /path/to/network-monitor-api/cli_scan.php
+//   php /path/to/this/folder/cli_scan.php
 // (In SCAN_MODE=agent each user's home agent schedules its own scans; run agent.php instead.)
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');

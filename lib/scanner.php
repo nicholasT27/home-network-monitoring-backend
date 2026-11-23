@@ -23,11 +23,6 @@ function cidr_hosts(string $cidr): array
     return $hosts;
 }
 
-function ip_in_cidr(string $ip, string $cidr): bool
-{
-    return in_array($ip, cidr_hosts($cidr), true);
-}
-
 function is_windows(): bool
 {
     return PHP_OS_FAMILY === 'Windows';
@@ -189,13 +184,13 @@ function demo_scan(int $n): array
 {
     $devices = [
         ['3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'],
-        ['A4:83:E7:AA:BB:01', '192.168.1.12', 'kee-macbook'],
+        ['A4:83:E7:AA:BB:01', '192.168.1.12', 'alex-macbook'],
         ['8C:77:12:44:55:66', '192.168.1.20', 'living-room-tv'],
         ['24:0A:C4:9A:12:34', '192.168.1.31', 'smart-plug-kitchen'],
         ['44:65:0D:77:88:99', '192.168.1.33', 'echo-dot'],
     ];
     // A phone with a rotating private MAC: same hostname, new MAC every 4 scans.
-    $devices[] = [sprintf('DA:A1:19:00:00:%02X', intdiv($n, 4) % 256), '192.168.1.40', 'keesiang-iphone'];
+    $devices[] = [sprintf('DA:A1:19:00:00:%02X', intdiv($n, 4) % 256), '192.168.1.40', 'alex-iphone'];
     if ($n >= 3) {
         $devices[] = ['5E:CF:7F:0B:AD:01', '192.168.1.77', null];
     }

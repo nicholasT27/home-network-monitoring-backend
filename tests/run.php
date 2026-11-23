@@ -2,7 +2,7 @@
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
 }
-// Backend tests on an in-memory SQLite database:  php backend/tests/run.php
+// Backend tests on an in-memory SQLite database:  php tests/run.php
 require __DIR__ . '/../lib/monitor.php';
 require __DIR__ . '/../lib/http.php';
 
@@ -90,13 +90,13 @@ $uid = (int) $alice['id'];
 $bid = (int) $bob['id'];
 
 // --- first scan: baseline
-$r = process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.12', 'kee-macbook')], 'manual', $ms());
+$r = process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.12', 'alex-macbook')], 'manual', $ms());
 check('first scan is a baseline: unknown devices, one summary alert', $r['new_unknown'] === 2 && $count("SELECT COUNT(*) FROM devices WHERE user_id=$uid AND status='unknown'") === 2
     && $count("SELECT COUNT(*) FROM alerts WHERE type='baseline'") === 1 && $count('SELECT COUNT(*) FROM alerts') === 1);
 $pdo->exec("UPDATE devices SET status='trusted' WHERE user_id=$uid");
 
 // --- rescan: no duplicate alerts; DHCP IP change raises no alert
-$r = process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'kee-macbook')], 'manual', $ms());
+$r = process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'alex-macbook')], 'manual', $ms());
 check('rescan does not re-alert', $r['new_unknown'] === 0 && $count('SELECT COUNT(*) FROM alerts') === 1);
 check('IP change recorded, not alerted', $count("SELECT COUNT(*) FROM connection_history WHERE event='ip_changed'") === 1
     && $pdo->query("SELECT ip FROM devices WHERE mac='A4:83:E7:AA:BB:01'")->fetchColumn() === '192.168.1.99');
@@ -104,29 +104,29 @@ check('IP change recorded, not alerted', $count("SELECT COUNT(*) FROM connection
 // --- device leaves, then rejoins
 process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan')], 'manual', $ms());
 check('missing device marked offline', $count("SELECT online FROM devices WHERE mac='A4:83:E7:AA:BB:01'") === 0);
-process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'kee-macbook')], 'manual', $ms());
+process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'alex-macbook')], 'manual', $ms());
 check('rejoin logged', $count("SELECT COUNT(*) FROM connection_history WHERE event='joined'") === 1);
 
 // --- MAC randomisation: trusted phone returns with a new private MAC and the same hostname
-$pdo->exec("INSERT INTO devices (user_id, mac, ip, hostname, vendor, status, online, first_seen, last_seen) VALUES ($uid,'DA:A1:19:00:00:00','192.168.1.40','keesiang-iphone','Private (randomised) MAC','trusted',0,'2026-01-01 00:00:00','2026-01-01 00:00:00')");
+$pdo->exec("INSERT INTO devices (user_id, mac, ip, hostname, vendor, status, online, first_seen, last_seen) VALUES ($uid,'DA:A1:19:00:00:00','192.168.1.40','alex-iphone','Private (randomised) MAC','trusted',0,'2026-01-01 00:00:00','2026-01-01 00:00:00')");
 $alertsBefore = $count('SELECT COUNT(*) FROM alerts');
-$base = [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'kee-macbook')];
-process_scan($pdo, $config, $uid, array_merge($base, [$dev('DA:A1:19:00:00:01', '192.168.1.41', 'KeeSiang-iPhone')]), 'manual', $ms());
+$base = [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'router.lan'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'alex-macbook')];
+process_scan($pdo, $config, $uid, array_merge($base, [$dev('DA:A1:19:00:00:01', '192.168.1.41', 'Alex-iPhone')]), 'manual', $ms());
 check('rotated MAC adopted without alert', $count('SELECT COUNT(*) FROM alerts') === $alertsBefore
     && $count("SELECT COUNT(*) FROM devices WHERE mac='DA:A1:19:00:00:01' AND status='trusted'") === 1
     && $count("SELECT COUNT(*) FROM devices WHERE mac='DA:A1:19:00:00:00'") === 0
     && $count("SELECT COUNT(*) FROM connection_history WHERE event='mac_rotated'") === 1);
 
 // --- a genuinely new device after the baseline is alerted
-process_scan($pdo, $config, $uid, array_merge($base, [$dev('DA:A1:19:00:00:01', '192.168.1.41', 'keesiang-iphone'), $dev('5E:CF:7F:0B:AD:01', '192.168.1.77')]), 'manual', $ms());
+process_scan($pdo, $config, $uid, array_merge($base, [$dev('DA:A1:19:00:00:01', '192.168.1.41', 'alex-iphone'), $dev('5E:CF:7F:0B:AD:01', '192.168.1.77')]), 'manual', $ms());
 check('new device after baseline raises unknown_device alert', $count("SELECT COUNT(*) FROM alerts WHERE type='unknown_device'") === 1);
 
 // --- clone: same hostname while the trusted original is still online must not be adopted
-process_scan($pdo, $config, $uid, array_merge($base, [$dev('DA:A1:19:00:00:01', '192.168.1.41', 'keesiang-iphone'), $dev('DA:A1:19:00:00:77', '192.168.1.60', 'keesiang-iphone')]), 'manual', $ms());
+process_scan($pdo, $config, $uid, array_merge($base, [$dev('DA:A1:19:00:00:01', '192.168.1.41', 'alex-iphone'), $dev('DA:A1:19:00:00:77', '192.168.1.60', 'alex-iphone')]), 'manual', $ms());
 check('hostname clone while original online is unknown', $count("SELECT COUNT(*) FROM devices WHERE mac='DA:A1:19:00:00:77' AND status='unknown'") === 1);
 
 // --- spoof check: trusted MAC suddenly reports a different hostname
-process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'evil-laptop'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'kee-macbook')], 'manual', $ms());
+process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'evil-laptop'), $dev('A4:83:E7:AA:BB:01', '192.168.1.99', 'alex-macbook')], 'manual', $ms());
 check('trusted device with changed hostname flagged suspicious', $count("SELECT suspicious FROM devices WHERE mac='3C:5A:B4:11:22:33'") === 1
     && $count("SELECT COUNT(*) FROM alerts WHERE type='suspicious_device'") === 1);
 process_scan($pdo, $config, $uid, [$dev('3C:5A:B4:11:22:33', '192.168.1.1', 'evil-laptop')], 'manual', $ms());
@@ -134,7 +134,7 @@ check('suspicious alert not repeated', $count("SELECT COUNT(*) FROM alerts WHERE
 
 // --- stale ARP entry: a device that no longer answers pings must go offline
 $pdo->exec("UPDATE devices SET online = 1 WHERE mac='A4:83:E7:AA:BB:01'");
-process_scan($pdo, $config, $uid, [['mac' => 'A4:83:E7:AA:BB:01', 'ip' => '192.168.1.99', 'hostname' => 'kee-macbook', 'alive' => false]], 'manual', $ms());
+process_scan($pdo, $config, $uid, [['mac' => 'A4:83:E7:AA:BB:01', 'ip' => '192.168.1.99', 'hostname' => 'alex-macbook', 'alive' => false]], 'manual', $ms());
 check('device with only a stale ARP entry goes offline', $count("SELECT online FROM devices WHERE mac='A4:83:E7:AA:BB:01'") === 0);
 $before = $count('SELECT COUNT(*) FROM alerts');
 process_scan($pdo, $config, $uid, [['mac' => '6A:11:22:33:44:55', 'ip' => '192.168.1.90', 'hostname' => null, 'alive' => false]], 'manual', $ms());
@@ -190,13 +190,12 @@ check('SMTP alert delivered to the fake server', $sent && str_contains($log, 'RC
     && str_contains($log, 'Subject: Network alert: test') && str_contains($log, 'IP: 1.2.3.4') && str_contains($log, '..dot line'));
 check('invalid recipient is not sent', !send_alert_email($smtpCfg, 'not-an-email', 's', 'b'));
 
-// --- configuration from environment variables (cloud hosting), no config.local.php needed
-$cfgFile = __DIR__ . '/../config.local.php';
+// --- configuration from environment variables (cloud hosting)
 $run = proc_open([PHP_BINARY, '-r', 'echo json_encode(require "' . __DIR__ . '/../config.php");'],
     [1 => ['pipe', 'w']], $pp, null, ['SUBNET' => '10.0.0.0/24', 'SCAN_MODE' => 'agent', 'DB_HOST' => 'db.example.com', 'DB_NAME' => 'x',
     'SMTP_HOST' => 'smtp.gmail.com', 'SMTP_PORT' => '465', 'ALLOWED_ORIGINS' => 'https://app.example.com', 'ALLOW_REGISTRATION' => '0']);
 $cfg = json_decode(stream_get_contents($pp[1]), true); proc_close($run);
-check('config reads environment variables', is_file($cfgFile) || ($cfg['subnet'] === '10.0.0.0/24' && $cfg['scan_mode'] === 'agent' && $cfg['smtp_port'] === 465
+check('config reads environment variables', ($cfg['subnet'] === '10.0.0.0/24' && $cfg['scan_mode'] === 'agent' && $cfg['smtp_port'] === 465
     && str_contains($cfg['db_dsn'], 'host=db.example.com') && in_array('https://app.example.com', $cfg['allowed_origins'], true) && $cfg['allow_registration'] === false));
 
 check('scans recorded', $count('SELECT COUNT(*) FROM scans') >= 9);
