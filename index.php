@@ -5,7 +5,7 @@
 $config = require __DIR__ . '/config.php';
 require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/monitor.php';
-foreach (['auth', 'agent', 'account', 'devices', 'alerts', 'scan', 'health'] as $routeFile) {
+foreach (['auth', 'agent', 'account', 'devices', 'alerts', 'scan'] as $routeFile) {
     require_once __DIR__ . "/routes/$routeFile.php";
 }
 
@@ -22,11 +22,6 @@ $method = $_SERVER['REQUEST_METHOD'];
 const USER_ACTIONS = ['status', 'devices', 'scan', 'alerts', 'alert_ack', 'device_update', 'device_delete', 'history', 'settings', 'test_email'];
 
 try {
-    // A setup check page. It only works when DEBUG=1 is set, and it works even if the database is broken.
-    if ($action === 'health' && $config['debug']) {
-        route_health($config);
-    }
-
     $pdo = db_connect($config);
 
     // Anyone may create an account or sign in

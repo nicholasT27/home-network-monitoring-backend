@@ -45,8 +45,6 @@ function call(string $action, string $method = 'GET', ?array $body = null, array
 // This function puts the login token into the request, so the test is signed in.
 function auth(string $token): array { return ["X-Auth-Token: $token"]; }
 
-[$c] = call('health');
-check('health diagnostic is off by default (needs sign-in like any other action)', $c === 401);
 
 [$c] = call('status');
 check('status without sign-in is refused (401)', $c === 401);

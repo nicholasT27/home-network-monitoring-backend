@@ -52,8 +52,6 @@ $config = [
 
     // People create their own accounts in the dashboard. Set ALLOW_REGISTRATION=0 to stop new sign-ups.
     'allow_registration' => true,
-    // DEBUG=1 turns on a setup check page (/index.php?action=health). It shows the names of settings, never their values. Keep it off normally.
-    'debug'        => false,
     'auth_secret'  => 'change-this-long-random-string',
     'token_ttl_s'  => 43200,
 
@@ -90,7 +88,6 @@ if (($origins = $env('ALLOWED_ORIGINS')) !== null) {
     $config['allowed_origins'] = array_merge($config['allowed_origins'], array_map('trim', explode(',', $origins)));
 }
 $config['smtp_port'] = (int) $config['smtp_port'];
-$config['debug'] = filter_var($env('DEBUG') ?? '0', FILTER_VALIDATE_BOOLEAN);
 if (($reg = $env('ALLOW_REGISTRATION')) !== null) {
     $config['allow_registration'] = filter_var($reg, FILTER_VALIDATE_BOOLEAN);
 }
