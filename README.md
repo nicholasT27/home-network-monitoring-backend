@@ -1,4 +1,4 @@
-# Home Network Monitor: Backend and Home Agent
+# Home Networking Monitoring System: Backend and Home Agent
 
 ![Dashboard](docs/images/08-new-unknown-device.png)
 
@@ -8,7 +8,7 @@ A system that finds the devices on your home network and emails you when an unkn
 
 ## About
 
-Most homes are set up once and never checked again, so the owner cannot tell when a new, unknown device joins the network. The **Home Network Device Monitoring and Alert System** finds the devices on a home network, tells the ones you know (**Trusted**) from the ones you do not (**Unknown**), and emails you when a new or suspicious device appears.
+Most homes are set up once and never checked again, so the owner cannot tell when a new, unknown device joins the network. The **Home Networking Monitoring System** finds the devices on a home network, tells the ones you know (**Trusted**) from the ones you do not (**Unknown**), and emails you when a new or suspicious device appears.
 
 It has three parts:
 - **Dashboard** (frontend repository): the web page where you see your devices and alerts.
