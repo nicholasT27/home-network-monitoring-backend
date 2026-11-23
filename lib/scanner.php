@@ -22,7 +22,7 @@ function cidr_hosts(string $cidr): array
     return $hosts;
 }
 
-// This function tells whether this computer runs Windows.
+// This function tells whether this computer runs Windows, so the right commands are used.
 function is_windows(): bool
 {
     return PHP_OS_FAMILY === 'Windows';
