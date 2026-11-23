@@ -136,6 +136,11 @@ check("Bob's first device is unknown while Alice's identical MAC stays trusted",
     && $pdo->query("SELECT status FROM devices WHERE user_id=$uid AND mac='3C:5A:B4:11:22:33'")->fetchColumn() === 'trusted');
 
 $demoUser = user_by_id($pdo, $uid);
+$live = array_merge($config, ['scan_mode' => 'live']);
+check('no network range typed: nothing to scan in live mode', user_subnet(['subnet' => null], $live) === '');
+check('network range typed: it is used', user_subnet(['subnet' => '10.0.0.0/24'], $live) === '10.0.0.0/24');
+try { run_scan($pdo, $live, array_merge($demoUser, ['subnet' => null])); $noRange = false; } catch (RuntimeException $e) { $noRange = true; }
+check('scan refuses to run before a network range is entered', $noRange);
 $demo = array_merge($config, ['scan_mode' => 'demo']);
 check('scan runs, then lock is released', is_array(run_scan($pdo, $demo, $demoUser)) && $count("SELECT COUNT(*) FROM settings WHERE k LIKE 'scan_lock%'") === 0);
 check('second scan runs after the first finished', is_array(run_scan($pdo, $demo, $demoUser)));

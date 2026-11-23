@@ -76,6 +76,10 @@ if (in_array('--once', $argv, true)) {
     if ($poll === null) {
         exit(1);
     }
+    if ($poll['subnet'] === '') {
+        fwrite(STDERR, "Enter your network range in the dashboard first (Network & alerts box), then run the agent again.\n");
+        exit(1);
+    }
     agent_scan_and_send($config, $poll['subnet']);
     exit(0);
 }
@@ -85,9 +89,16 @@ echo flush_arp_cache()
     ? "ARP check: ON (ping sweep first, then an ARP pass finds devices that ignore pings).\n"
     : "ARP check: OFF. Run the agent with sudo (Windows: an Administrator terminal) to also find devices that ignore pings.\n";
 $last = 0;
+$waiting = false;
 while (true) {
     $poll = agent_call($config, 'agent_poll');
-    if ($poll !== null && (($poll['scan_requested'] ?? false) || time() - $last >= $config['agent_interval_s'])) {
+    if ($poll !== null && $poll['subnet'] === '') {
+        if (!$waiting) {
+            echo "Waiting: enter your network range in the dashboard (Network & alerts box). Scanning starts after that.\n";
+            $waiting = true;
+        }
+    } elseif ($poll !== null && (($poll['scan_requested'] ?? false) || time() - $last >= $config['agent_interval_s'])) {
+        $waiting = false;
         agent_scan_and_send($config, $poll['subnet']);
         $last = time();
     }

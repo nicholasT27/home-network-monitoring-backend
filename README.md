@@ -50,6 +50,7 @@ Check it by typing `php -v` in the terminal; it should show a version starting w
   - **Mac:** type `ipconfig getifaddr en0`. It prints the address, for example `192.168.0.151`. (If it prints nothing, try `ipconfig getifaddr en1`.)
 
   Now keep the first three numbers and end with `.0/24`: `192.168.0.151` becomes `192.168.0.0/24`. Type that in the **Your network range** box and click **Save network**. (Not sure? See [Finding your network range](#finding-your-network-range) below.)
+  The dashboard will not scan until you have saved your network range, so do this step first.
 - Alert email: type the address that should receive alerts, click **Save email**, then **Send test email**.
 
 ![Network and alerts](docs/images/03-network-and-email.png)

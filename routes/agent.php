@@ -9,7 +9,8 @@ function route_agent(PDO $pdo, array $config, string $action, string $method): v
 
     if ($action === 'agent_poll') {
         $requested = (int) $agent['scan_requested'];
-        json_out(['scan_requested' => $requested > 0 && time() - $requested < 300, 'subnet' => user_subnet($agent, $config)]);
+        $subnet = user_subnet($agent, $config);
+        json_out(['scan_requested' => $subnet !== '' && $requested > 0 && time() - $requested < 300, 'subnet' => $subnet]);
     }
     if ($action === 'agent_ingest' && $method === 'POST') {
         json_out(ingest_agent_scan($pdo, $config, $agent, json_body()));

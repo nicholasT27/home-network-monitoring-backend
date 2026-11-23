@@ -165,6 +165,9 @@ function release_scan_lock(PDO $pdo, int $uid): void
 function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual'): array
 {
     $uid = (int) $user['id'];
+    if (user_subnet($user, $config) === '') {
+        throw new RuntimeException('Enter your network range first (in the Network & alerts box).');
+    }
     $target = (int) ($config['scan_target_s'] ?? 120);
     if (!acquire_scan_lock($pdo, $uid, $target + 60)) {
         throw new RuntimeException('A scan is already running. Wait a minute and try again.');

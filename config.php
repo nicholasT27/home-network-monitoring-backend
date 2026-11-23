@@ -41,7 +41,7 @@ $config = [
     'db_user'      => null,
     'db_pass'      => null,
 
-    // The network range to scan if the user has not chosen one (at most 1024 addresses). Each user sets their own in the dashboard.
+    // Only used in demo mode. For real scans each user must enter their own network range in the dashboard first.
     'subnet'       => '192.168.1.0/24',
     // 'live'  = this server scans the network it is connected to (use when the server runs at home)
     // 'agent' = each user's home agent (agent.php) scans and sends the results here (use when the server is online)

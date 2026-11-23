@@ -60,10 +60,13 @@ function login_user(PDO $pdo, string $email, string $password): ?array
     return ($user && password_verify($password, $user['password_hash'])) ? $user : null;
 }
 
-// This function gives back the user's home network range, or the default one if they have not typed it.
+// This function gives back the user's home network range, or nothing if they have not typed it yet.
 function user_subnet(array $user, array $config): string
 {
-    return $user['subnet'] ?: $config['subnet'];
+    if ($user['subnet']) {
+        return $user['subnet'];
+    }
+    return ($config['scan_mode'] ?? 'live') === 'demo' ? $config['subnet'] : '';
 }
 
 // This function checks and tidies the network range typed by the user.
