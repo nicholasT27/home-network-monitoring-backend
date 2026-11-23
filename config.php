@@ -3,7 +3,7 @@
 //   1. the default values written below
 //   2. the .env file next to this file (when you run it on your own computer)
 //   3. settings typed into a web host's control panel
-// The names of all settings are listed in .env.example.
+// The names of all the settings are in the list just below.
 
 function load_env_file(string $path): array
 {
