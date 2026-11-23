@@ -22,7 +22,7 @@ if ($config['agent_api_url'] === '' || $config['agent_key'] === '') {
     exit(1);
 }
 
-// This function sends a request to the dashboard's server and gives back its answer.
+// This function sends a request to the backend on Wasmer and gives back its answer.
 function agent_call(array $config, string $action, ?array $body = null): ?array
 {
     $url = $config['agent_api_url'] . (str_contains($config['agent_api_url'], '?') ? '&' : '?') . 'action=' . $action;
@@ -57,7 +57,7 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
     return $data;
 }
 
-// This function scans the home network and sends the list of devices to the dashboard's server.
+// This function scans the home network and sends the list of devices to the backend on Wasmer.
 function agent_scan_and_send(array $config, string $subnet): void
 {
     $start = microtime(true);

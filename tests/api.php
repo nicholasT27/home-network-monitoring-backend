@@ -27,7 +27,7 @@ $fail = 0;
 // This function records whether one test passed or failed.
 function check(string $name, bool $ok): void { global $fail; echo ($ok ? 'PASS' : 'FAIL') . "  $name\n"; if (!$ok) $fail++; }
 
-// This function sends a test request to the server.
+// This function sends a test request to the backend.
 function call(string $action, string $method = 'GET', ?array $body = null, array $headers = [], array $query = []): array
 {
     global $port;

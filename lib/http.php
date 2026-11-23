@@ -1,6 +1,6 @@
 <?php
 
-// This function allows the dashboard website to talk to this server.
+// This function allows the dashboard website to talk to the backend on Wasmer.
 function send_cors(array $config): void
 {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';

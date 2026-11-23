@@ -161,7 +161,7 @@ function release_scan_lock(PDO $pdo, int $uid): void
     $pdo->prepare('DELETE FROM settings WHERE k = ?')->execute(['scan_lock_' . $uid]);
 }
 
-// This function runs a scan on this server and saves the result.
+// This function runs a scan on the computer that runs the backend, and saves the result.
 function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual'): array
 {
     $uid = (int) $user['id'];
