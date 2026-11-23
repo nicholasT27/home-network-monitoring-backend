@@ -169,7 +169,7 @@ function scan_network(array $config, ?int $deadline = null, int $demoRound = 1):
     return $devices;
 }
 
-// This function makes a pretend network, for trying the system without a real one.
+// This function makes a pretend network, for trying the system without a real one (used for testing).
 function demo_scan(int $n): array
 {
     $devices = [
