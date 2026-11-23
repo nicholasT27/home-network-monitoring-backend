@@ -66,7 +66,7 @@ function user_subnet(array $user, array $config): string
     return $user['subnet'] ?: $config['subnet'];
 }
 
-// This function checks the network range typed by the user and tidies it (for example 192.168.0.124/24 becomes 192.168.0.0/24).
+// This function checks and tidies the network range typed by the user.
 function normalise_subnet(string $cidr): string
 {
     $cidr = trim($cidr);

@@ -36,7 +36,7 @@ function json_body(): array
     return is_array($data) ? $data : [];
 }
 
-// This function turns text into a form that is safe to use inside a login token.
+// This function changes text into the form used inside the login token.
 function b64url(string $s): string
 {
     return rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
@@ -49,7 +49,7 @@ function make_token(array $config, int $userId): string
     return $payload . '.' . b64url(hash_hmac('sha256', $payload, $config['auth_secret'], true));
 }
 
-// This function gives back the user the login token belongs to, or nothing if the token is wrong or has run out.
+// This function finds which user a login token belongs to.
 function token_user(array $config, string $token): ?int
 {
     $parts = explode('.', $token);
@@ -64,7 +64,7 @@ function token_user(array $config, string $token): ?int
     return (is_array($payload) && ($payload['exp'] ?? 0) >= time() && isset($payload['uid'])) ? (int) $payload['uid'] : null;
 }
 
-// This function checks that the user is signed in and gives back who they are.
+// This function checks that the user is signed in.
 function require_auth(array $config): int
 {
     $uid = token_user($config, $_SERVER['HTTP_X_AUTH_TOKEN'] ?? '');

@@ -5,7 +5,7 @@ require_once __DIR__ . '/users.php';
 require_once __DIR__ . '/scanner.php';
 require_once __DIR__ . '/mailer.php';
 
-// This function saves one line in a device's history (for example: came online).
+// This function saves a line in a device's history (for example: came online).
 function add_history(PDO $pdo, int $uid, string $mac, ?string $ip, ?string $host, string $event, string $at): void
 {
     $pdo->prepare('INSERT INTO connection_history (user_id, mac, ip, hostname, event, event_time) VALUES (?,?,?,?,?,?)')
@@ -27,7 +27,7 @@ function raise_alert(PDO $pdo, array $config, int $uid, string $type, string $ma
         ->execute([$uid, $mac, $ip, $host, $type, $message, $sent ? 1 : 0, $at]);
 }
 
-// This function marks a device as suspicious and raises an alert about it.
+// This function marks a device as suspicious and sends an alert.
 function flag_suspicious(PDO $pdo, array $config, int $uid, array $dev, ?string $ip, ?string $host, string $reason, string $at): void
 {
     $pdo->prepare('UPDATE devices SET suspicious = 1, suspicious_reason = ? WHERE user_id = ? AND mac = ?')->execute([$reason, $uid, $dev['mac']]);
@@ -41,7 +41,7 @@ function same_name(?string $a, ?string $b): bool
     return $a !== null && $b !== null && strcasecmp($a, $b) === 0;
 }
 
-// This function takes the devices found by a scan, compares them with the saved list, and raises alerts for new ones.
+// This function checks the devices found by a scan against the saved list and raises alerts for new ones.
 function process_scan(PDO $pdo, array $config, int $uid, array $found, string $source, int $startedMs): array
 {
     $at = now();
@@ -142,7 +142,7 @@ function process_scan(PDO $pdo, array $config, int $uid, array $found, string $s
     return ['started_at' => $at, 'duration_ms' => $duration, 'devices_found' => count($found), 'new_unknown' => $newUnknown];
 }
 
-// This function makes sure only one scan runs at a time for a user.
+// This function makes sure only one scan runs at a time.
 function acquire_scan_lock(PDO $pdo, int $uid, int $staleSeconds): bool
 {
     $key = 'scan_lock_' . $uid;
@@ -155,7 +155,7 @@ function acquire_scan_lock(PDO $pdo, int $uid, int $staleSeconds): bool
     }
 }
 
-// This function lets the next scan start once the current one has finished.
+// This function lets the next scan start after this one finishes.
 function release_scan_lock(PDO $pdo, int $uid): void
 {
     $pdo->prepare('DELETE FROM settings WHERE k = ?')->execute(['scan_lock_' . $uid]);
@@ -182,7 +182,7 @@ function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual
     }
 }
 
-// This function saves a scan sent by the home agent, after checking every device in it.
+// This function saves a scan sent by the home agent, after checking it.
 function ingest_agent_scan(PDO $pdo, array $config, array $user, array $payload): array
 {
     $uid = (int) $user['id'];

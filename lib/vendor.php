@@ -1,6 +1,6 @@
 <?php
 
-// This function gives a short list that links the first part of a hardware ID to the maker's name.
+// This function gives a short list of makers' names, matched by the first part of a MAC address.
 function oui_table(): array
 {
     return [
@@ -21,13 +21,13 @@ function oui_table(): array
     ];
 }
 
-// This function checks whether a hardware ID is a made-up (private) one, as phones use.
+// This function checks whether a MAC address is a made-up (private) one.
 function is_private_mac(string $mac): bool
 {
     return (hexdec(substr($mac, 0, 2)) & 0x02) !== 0;
 }
 
-// This function finds the maker's name of a device from its hardware ID.
+// This function finds the maker's name from a MAC address.
 function vendor_for_mac(string $mac): ?string
 {
     if (is_private_mac($mac)) {

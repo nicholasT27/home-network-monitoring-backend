@@ -1,6 +1,6 @@
 <?php
 
-// This function sends the user's summary for the dashboard (device counts, settings, agent key).
+// This function sends the user's summary for the dashboard.
 function route_status(PDO $pdo, array $config, array $user, string $method): void
 {
     $st = $pdo->prepare('SELECT * FROM scans WHERE user_id = ? ORDER BY id DESC LIMIT 1');

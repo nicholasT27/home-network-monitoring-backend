@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/vendor.php';
 
-// This function turns a network range (like 192.168.0.0/24) into the list of addresses to check.
+// This function turns a network range (like 192.168.0.0/24) into a list of addresses.
 function cidr_hosts(string $cidr): array
 {
     if (!preg_match('#^(\d{1,3}(?:\.\d{1,3}){3})/(\d{1,2})$#', $cidr, $m) || !filter_var($m[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
@@ -57,7 +57,7 @@ function ping_sweep(array $ips, int $batch = 64): array
     return $alive;
 }
 
-// This function asks the network again about the addresses that did not answer the ping.
+// This function checks again the addresses that did not answer the ping.
 function arp_probe(array $ips, int $rounds = 3, int $pauseUs = 700000): void
 {
     for ($r = 0; $r < $rounds && $ips; $r++) {
@@ -72,7 +72,7 @@ function arp_probe(array $ips, int $rounds = 3, int $pauseUs = 700000): void
     }
 }
 
-// This function clears this computer's list of neighbours, so only devices that answer during this scan are counted.
+// This function clears the computer's saved list of devices, so only devices online now are counted.
 function flush_arp_cache(): bool
 {
     if (is_windows()) {
@@ -90,7 +90,7 @@ function flush_arp_cache(): bool
     return $code === 0 && !preg_match('/elevat|denied|not permitted|failed|not found/i', implode(' ', $out));
 }
 
-// This function decides which addresses count as online.
+// This function decides which addresses are online.
 function online_ips(array $pingReplies, array $arpEntries, bool $cacheFlushed): array
 {
     $alive = $pingReplies;
@@ -102,13 +102,13 @@ function online_ips(array $pingReplies, array $arpEntries, bool $cacheFlushed): 
     return $alive;
 }
 
-// This function writes a hardware ID (MAC address) in one standard way.
+// This function writes a MAC address in one standard way.
 function normalise_mac(string $mac): string
 {
     return strtoupper(str_replace('-', ':', $mac));
 }
 
-// This function reads the computer's list of neighbours and turns it into a list of address and hardware ID.
+// This function reads the computer's device list and turns it into addresses and MAC addresses.
 function parse_arp(string $text, string $cidr): array
 {
     $hosts = array_flip(cidr_hosts($cidr));
@@ -129,7 +129,7 @@ function parse_arp(string $text, string $cidr): array
     return $found;
 }
 
-// This function reads the computer's list of neighbours for the chosen network range.
+// This function reads the computer's saved list of devices.
 function read_arp_cache(string $cidr): array
 {
     $outputs = is_windows() ? ['arp -a'] : ['ip neigh show 2>/dev/null', 'arp -an 2>/dev/null'];
@@ -140,7 +140,7 @@ function read_arp_cache(string $cidr): array
     return $found;
 }
 
-// This function looks up the name of a device from its address.
+// This function looks up a device's name from its address.
 function resolve_hostname(string $ip): ?string
 {
     $name = @gethostbyaddr($ip);

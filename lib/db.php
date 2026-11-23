@@ -32,7 +32,7 @@ function parse_db_settings(callable $env): ?array
     return null;
 }
 
-// This function prepares the table plan so it can safely run on a database that already has tables.
+// This function prepares the list of database tables to create.
 function schema_statements(string $sql): array
 {
     $sql = preg_replace('/^--.*$/m', '', $sql);
@@ -47,7 +47,7 @@ function schema_statements(string $sql): array
     return $out;
 }
 
-// This function creates the database tables automatically the first time, so nobody has to import them by hand.
+// This function creates the database tables the first time, so nobody has to do it by hand.
 function mysql_ensure_schema(PDO $pdo): void
 {
     if ($pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn() !== false) {
@@ -82,7 +82,7 @@ function db_connect(array $config): PDO
     return $pdo;
 }
 
-// This function makes sure the folder for the SQLite test file exists and cannot be opened from the web.
+// This function prepares the folder for the SQLite test file.
 function sqlite_prepare_file(string $path): void
 {
     $dir = dirname($path);

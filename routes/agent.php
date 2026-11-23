@@ -1,6 +1,6 @@
 <?php
 
-// This function answers the home agent: tells it when to scan and receives the scan result.
+// This function talks to the home agent: tells it when to scan and receives its result.
 function route_agent(PDO $pdo, array $config, string $action, string $method): void
 {
     $agent = user_by_agent_key($pdo, (string) ($_SERVER['HTTP_X_AGENT_KEY'] ?? ''));
