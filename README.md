@@ -23,17 +23,13 @@ Built as the final year project for the CSN Project (TSN309/10), Wawasan Open Un
 
 You need a computer at home that stays on and is connected to your Wi-Fi or router (Windows, Mac or Linux).
 
-**1. Install VS Code (recommended).** Download it free from https://code.visualstudio.com and install it. It lets you open the project folder, edit the `.env` file and run the commands in one window.
+**1. Install PHP 8 or newer.** The home agent is a PHP program, so the computer needs PHP.
+- **Windows (recommended: XAMPP):** download XAMPP from https://www.apachefriends.org and install it with the default options. You only need its PHP: **do not start Apache or MySQL**. To check it, press the Windows key, type `cmd`, press Enter, and type `C:\xampp\php\php.exe -v`. It should show a version starting with 8.
+- **Mac:** open **Terminal** and type `brew install php` (needs [Homebrew](https://brew.sh); the page shows its one-line install). Check it with `php -v`. VS Code (https://code.visualstudio.com) is a handy free editor if you like, but it is not required.
 
-**2. Install PHP 8 or newer.** VS Code does not come with PHP, but you can install PHP from inside VS Code: choose **Terminal > New Terminal** and type the command for your computer, then close and reopen VS Code.
-- **Mac:** `brew install php` (needs [Homebrew](https://brew.sh); the page shows its one-line install).
-- **Windows:** `winget install PHP.PHP.8.3`
+**2. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it. If you already use git, you can instead clone the repository with `git clone https://github.com/nicholasT27/home-network-monitoring-backend.git`. Nothing else needs installing: this project has no extra packages, so there is no `npm install`; PHP is all it needs.
 
-Check it by typing `php -v` in the terminal; it should show a version starting with 8. On Windows also type `php -m` and look for `openssl` in the list. If `openssl` is missing, the agent cannot connect to the dashboard's server: use XAMPP's PHP instead, as described in [Using XAMPP's PHP](#using-xampps-php) below.
-
-**3. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it. Then in VS Code choose **File > Open Folder** and pick the unzipped folder. If you already use git, you can instead clone the repository with `git clone https://github.com/nicholasT27/home-network-monitoring-backend.git`. Nothing else needs installing: this project has no extra packages, so there is no `npm install`; PHP is all it needs.
-
-**4. Sign in.** Open https://home-network-monitoring-frontend.pages.dev and sign in with the test account:
+**3. Sign in.** Open https://home-network-monitoring-frontend.pages.dev and sign in with the test account:
 
 | | |
 |---|---|
@@ -44,8 +40,8 @@ Check it by typing `php -v` in the terminal; it should show a version starting w
 
 ![Create an account](docs/images/02-create-account.png)
 
-**5. Set your network range and alert email.** In the **Network & alerts** panel:
-- **Network range.** First find your computer's IP address. In the VS Code terminal (**Terminal > New Terminal**) use `ipconfig` on both Windows and Mac:
+**4. Set your network range and alert email.** In the **Network & alerts** panel:
+- **Network range.** First find your computer's IP address. In Command Prompt (Windows) or Terminal (Mac) use:
   - **Windows:** type `ipconfig`. Under **Wireless LAN adapter Wi-Fi** (or **Ethernet adapter** if you use a cable) find the line **IPv4 Address**, for example `192.168.0.151`.
   - **Mac:** type `ipconfig getifaddr en0`. It prints the address, for example `192.168.0.151`. (If it prints nothing, try `ipconfig getifaddr en1`.)
 
@@ -55,26 +51,29 @@ Check it by typing `php -v` in the terminal; it should show a version starting w
 
 ![Network and alerts](docs/images/03-network-and-email.png)
 
-**6. Connect the home agent.** In the **Home agent** panel click **Copy**. In VS Code open the file named `.env` in the project folder (it is already there). Replace its two lines (`AGENT_API_URL` and `AGENT_KEY`) with the two lines you copied, and save the file. Keep your agent key private: do not share the `.env` file or put it on GitHub.
+**5. Connect the home agent.** In the **Home agent** panel click **Copy**. In the project folder open the file named `.env` with a text editor (right-click it and choose **Open with > Notepad** on Windows, or open it with TextEdit or VS Code on Mac). It is already there. Replace its two lines (`AGENT_API_URL` and `AGENT_KEY`) with the two lines you copied, and save the file. Keep your agent key private: do not share the `.env` file or put it on GitHub.
 
 ![Home agent panel](docs/images/05-home-agent-panel.png)
 
-**7. Start the agent.** In VS Code choose **Terminal > New Terminal** (it opens in the project folder) and run the command below. Leave the terminal open.
-- Mac or Linux: `sudo php agent.php`
-- Windows: close VS Code and open it again **as Administrator** (right-click VS Code, **Run as administrator**), open a new terminal, then `php agent.php`
+**6. Start the agent.** Leave the window open while it runs.
+- **Windows:**
+  1. Press the Windows key, type `cmd`, right-click **Command Prompt** and choose **Run as administrator**.
+  2. Go to the project folder: type `cd /d ` (with a space after it) and then the folder's path, for example `cd /d C:\Users\you\Downloads\home-network-monitoring-backend-main`. (In File Explorer, click the address bar of the folder to copy its path.)
+  3. Type `C:\xampp\php\php.exe agent.php`
+- **Mac or Linux:** open Terminal, go to the project folder (for example `cd ~/Downloads/home-network-monitoring-backend-main`) and type `sudo php agent.php`.
 
 The first line should say `ARP check: ON`. The Home agent panel turns **Online**.
 
-**8. Scan.** Click **Scan now**. After a few seconds the devices on your network are listed.
+**7. Scan.** Click **Scan now**. After a few seconds the devices on your network are listed.
 
 ![Scan requested](docs/images/06-scan-waiting.png)
 ![Scan finished](docs/images/07-scan-finished.png)
 
-**9. Trust your own devices.** Click **Trust** next to each device you recognise. A device you do not recognise stays **Unknown**. From now on a new unknown device raises an alert in **Active alerts** and an email, and the agent scans by itself every 2 minutes.
+**8. Trust your own devices.** Click **Trust** next to each device you recognise. A device you do not recognise stays **Unknown**. From now on a new unknown device raises an alert in **Active alerts** and an email, and the agent scans by itself every 2 minutes.
 
 ![A new unknown device](docs/images/08-new-unknown-device.png)
 
-To stop, click in the VS Code terminal and press `Ctrl+C`.
+To stop, click in the window and press `Ctrl+C`.
 
 ## Finding your network range
 
@@ -100,31 +99,13 @@ The **network range** is the group of addresses on your home network that the ag
 
 (For almost every home network `/24` is right. If your router uses a bigger network, the dashboard accepts ranges from `/22` to `/30`.)
 
-## Using XAMPP's PHP
-
-XAMPP is an alternative way to get PHP (it already has `openssl` switched on). You only need its PHP: **do not start Apache or MySQL**.
-
-1. Download XAMPP from https://www.apachefriends.org and install it with the default options (it installs into `C:\xampp` on Windows and `/Applications/XAMPP` on Mac).
-2. Check its PHP works. In the VS Code terminal type:
-   - **Windows:** `C:\xampp\php\php.exe -v`
-   - **Mac:** `/Applications/XAMPP/xamppfiles/bin/php -v`
-
-   It should show a version starting with 8.
-3. Use that full path wherever the steps say `php`. To start the agent (Windows, in a VS Code opened **as Administrator**):
-
-   ```
-   C:\xampp\php\php.exe agent.php
-   ```
-
-   Mac: `sudo /Applications/XAMPP/xamppfiles/bin/php agent.php`
-4. Optional, so you can type just `php`: on Windows press the Windows key, type **environment variables**, open **Edit the system environment variables**, click **Environment Variables**, select **Path** under "System variables", click **Edit**, **New**, type `C:\xampp\php`, then **OK** on every window and reopen VS Code.
-
 ## Something not working?
 
 | What you see | What to do |
 |---|---|
-| `php: command not found` | PHP is not installed. Install it and open a new terminal |
+| `php` is not recognized (Windows) | Use the full path as in step 6: `C:\xampp\php\php.exe agent.php`. If that is not found either, install XAMPP (step 1) |
+| `php: command not found` (Mac) | PHP is not installed. Install it as in step 1 and open a new Terminal |
 | Home agent stays Offline | Click **Copy** in the Home agent panel again, paste both lines over the two lines in the `.env` file, and save it |
-| `ARP check: OFF` | Start the agent with `sudo` (Mac or Linux) or from an Administrator terminal (Windows) |
+| `ARP check: OFF` | Start the agent with `sudo` (Mac or Linux) or from a Command Prompt opened as Administrator (Windows) |
 | Scan finds 0 devices | The network range is wrong. Check the first three numbers against your computer's IP address |
 | No alert emails | Click **Send test email**. Alerts still appear in the dashboard |
