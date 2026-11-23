@@ -1,6 +1,6 @@
 <?php
 
-// This function helps the application connect to the MySQL database.
+// This function collects the MySQL details from Wasmer and the .env file, and passes them to config.php.
 function parse_db_settings(callable $env): ?array
 {
     $first = function (array $names) use ($env): ?string {
