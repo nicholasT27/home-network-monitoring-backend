@@ -29,7 +29,7 @@ You need a computer at home that stays on and is connected to your Wi-Fi or rout
 - **Mac:** `brew install php` (needs [Homebrew](https://brew.sh); the page shows its one-line install).
 - **Windows:** `winget install PHP.PHP.8.3`
 
-Check it by typing `php -v` in the terminal; it should show a version starting with 8. On Windows also type `php -m` and look for `openssl` in the list. If `openssl` is missing, the agent cannot connect to the dashboard's server; install [XAMPP](https://www.apachefriends.org/) instead, which has it switched on.
+Check it by typing `php -v` in the terminal; it should show a version starting with 8. On Windows also type `php -m` and look for `openssl` in the list. If `openssl` is missing, the agent cannot connect to the dashboard's server: use XAMPP's PHP instead, as described in [Using XAMPP's PHP](#using-xampps-php) below.
 
 **3. Download this project with git.** In the VS Code terminal type:
 
@@ -51,7 +51,11 @@ Then choose **File > Open Folder** in VS Code and pick the new `home-network-mon
 ![Create an account](docs/images/02-create-account.png)
 
 **5. Set your network range and alert email.** In the **Network & alerts** panel:
-- Network range: take your computer's IP address, keep the first three numbers and end with `.0/24`. For example `192.168.0.151` becomes `192.168.0.0/24`. (Mac: System Settings > Wi-Fi > Details > TCP/IP. Windows: type `ipconfig`.) Click **Save network**.
+- **Network range.** First find your computer's IP address. In the VS Code terminal (**Terminal > New Terminal**) use `ipconfig` on both Windows and Mac:
+  - **Windows:** type `ipconfig`. Under **Wireless LAN adapter Wi-Fi** (or **Ethernet adapter** if you use a cable) find the line **IPv4 Address**, for example `192.168.0.151`.
+  - **Mac:** type `ipconfig getifaddr en0`. It prints the address, for example `192.168.0.151`. (If it prints nothing, try `ipconfig getifaddr en1`.)
+
+  Now keep the first three numbers and end with `.0/24`: `192.168.0.151` becomes `192.168.0.0/24`. Type that in the **Your network range** box and click **Save network**.
 - Alert email: type the address that should receive alerts, click **Save email**, then **Send test email**.
 
 ![Network and alerts](docs/images/03-network-and-email.png)
@@ -76,6 +80,25 @@ The first line should say `ARP check: ON`. The Home agent panel turns **Online**
 ![A new unknown device](docs/images/08-new-unknown-device.png)
 
 To stop, click in the VS Code terminal and press `Ctrl+C`.
+
+## Using XAMPP's PHP
+
+XAMPP is an alternative way to get PHP (it already has `openssl` switched on). You only need its PHP: **do not start Apache or MySQL**.
+
+1. Download XAMPP from https://www.apachefriends.org and install it with the default options (it installs into `C:\xampp` on Windows and `/Applications/XAMPP` on Mac).
+2. Check its PHP works. In the VS Code terminal type:
+   - **Windows:** `C:\xampp\php\php.exe -v`
+   - **Mac:** `/Applications/XAMPP/xamppfiles/bin/php -v`
+
+   It should show a version starting with 8.
+3. Use that full path wherever the steps say `php`. To start the agent (Windows, in a VS Code opened **as Administrator**):
+
+   ```
+   C:\xampp\php\php.exe agent.php
+   ```
+
+   Mac: `sudo /Applications/XAMPP/xamppfiles/bin/php agent.php`
+4. Optional, so you can type just `php`: on Windows press the Windows key, type **environment variables**, open **Edit the system environment variables**, click **Environment Variables**, select **Path** under "System variables", click **Edit**, **New**, type `C:\xampp\php`, then **OK** on every window and reopen VS Code.
 
 ## Something not working?
 
