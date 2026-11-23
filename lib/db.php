@@ -1,6 +1,6 @@
 <?php
 
-// This function works out how to connect to the database from the settings.
+// This function finds the MySQL details (address, name, username, password) in the settings, so the app can connect to MySQL.
 function parse_db_settings(callable $env): ?array
 {
     $first = function (array $names) use ($env): ?string {
@@ -58,7 +58,7 @@ function mysql_ensure_schema(PDO $pdo): void
     }
 }
 
-// This function connects to the database (MySQL, or SQLite for testing).
+// This function connects to MySQL (SQLite is only used for testing).
 function db_connect(array $config): PDO
 {
     $dsn = $config['db_dsn'];
