@@ -1,5 +1,6 @@
 <?php
-// Talking to the database. It is either a single file (SQLite, created automatically) or MySQL (tables are created automatically the first time).
+// Talking to the database. The system uses MySQL (the tables are created automatically the first time).
+// SQLite, a single file, is used for testing.
 
 // Works out how to connect to the database from the settings. Hosts use different names for the same thing, so all of these are accepted:
 //   DB_DSN, or one web-style address (DATABASE_URL / DB_URL / MYSQL_URL = mysql://user:pass@host:port/name),
