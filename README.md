@@ -23,11 +23,13 @@ Built as the final year project for the CSN Project (TSN309/10), Wawasan Open Un
 
 You need a computer at home that stays on and is connected to your Wi-Fi or router (Windows, Mac or Linux).
 
-**1. Install PHP 8 or newer** on that computer. Check it by typing `php -v` in a terminal. (Windows: install [XAMPP](https://www.apachefriends.org). Mac: `brew install php`.)
+**1. Install VS Code (recommended).** Download it free from https://code.visualstudio.com and install it. It lets you open the project folder, create the `.env` file and run the commands in one window.
 
-**2. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it.
+**2. Install PHP 8 or newer** on that computer. Check it by typing `php -v` in a terminal. (Windows: install [XAMPP](https://www.apachefriends.org). Mac: `brew install php`.)
 
-**3. Sign in.** Open https://home-network-monitoring-frontend.pages.dev and sign in with the test account:
+**3. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it. Then open VS Code and choose **File > Open Folder** and pick the unzipped folder.
+
+**4. Sign in.** Open https://home-network-monitoring-frontend.pages.dev and sign in with the test account:
 
 | | |
 |---|---|
@@ -38,32 +40,32 @@ You need a computer at home that stays on and is connected to your Wi-Fi or rout
 
 ![Create an account](docs/images/02-create-account.png)
 
-**4. Set your network range and alert email.** In the **Network & alerts** panel:
+**5. Set your network range and alert email.** In the **Network & alerts** panel:
 - Network range: take your computer's IP address, keep the first three numbers and end with `.0/24`. For example `192.168.0.151` becomes `192.168.0.0/24`. (Mac: System Settings > Wi-Fi > Details > TCP/IP. Windows: type `ipconfig`.) Click **Save network**.
 - Alert email: type the address that should receive alerts, click **Save email**, then **Send test email**.
 
 ![Network and alerts](docs/images/03-network-and-email.png)
 
-**5. Connect the home agent.** In the **Home agent** panel click **Copy**. In the folder you unzipped, create a new file named `.env` and paste the two lines into it (`AGENT_API_URL` and `AGENT_KEY`). Save it.
+**6. Connect the home agent.** In the **Home agent** panel click **Copy**. In VS Code choose **File > New File**, paste the two lines (`AGENT_API_URL` and `AGENT_KEY`), and save the file as `.env` in the project folder.
 
 ![Home agent panel](docs/images/05-home-agent-panel.png)
 
-**6. Start the agent.** Open a terminal in the unzipped folder and run it. Leave the window open.
+**7. Start the agent.** In VS Code choose **Terminal > New Terminal** (it opens in the project folder) and run the command below. Leave the terminal open.
 - Mac or Linux: `sudo php agent.php`
-- Windows: open the terminal **as Administrator**, then `php agent.php`
+- Windows: close VS Code and open it again **as Administrator** (right-click VS Code, **Run as administrator**), open a new terminal, then `php agent.php`
 
 The first line should say `ARP check: ON`. The Home agent panel turns **Online**.
 
-**7. Scan.** Click **Scan now**. After a few seconds the devices on your network are listed.
+**8. Scan.** Click **Scan now**. After a few seconds the devices on your network are listed.
 
 ![Scan requested](docs/images/06-scan-waiting.png)
 ![Scan finished](docs/images/07-scan-finished.png)
 
-**8. Trust your own devices.** Click **Trust** next to each device you recognise. A device you do not recognise stays **Unknown**. From now on a new unknown device raises an alert in **Active alerts** and an email, and the agent scans by itself every 2 minutes.
+**9. Trust your own devices.** Click **Trust** next to each device you recognise. A device you do not recognise stays **Unknown**. From now on a new unknown device raises an alert in **Active alerts** and an email, and the agent scans by itself every 2 minutes.
 
 ![A new unknown device](docs/images/08-new-unknown-device.png)
 
-To stop, press `Ctrl+C` in the agent's terminal.
+To stop, click in the VS Code terminal and press `Ctrl+C`.
 
 ## Something not working?
 
