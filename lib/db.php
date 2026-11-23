@@ -32,7 +32,7 @@ function parse_db_settings(callable $env): ?array
     return null;
 }
 
-// This function prepares the list of database tables to create.
+// This function tidies up the table plan.
 function schema_statements(string $sql): array
 {
     $sql = preg_replace('/^--.*$/m', '', $sql);
