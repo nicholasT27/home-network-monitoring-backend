@@ -5,7 +5,7 @@
 //   3. settings typed into a web host's control panel
 // The names of all the settings are in the list just below.
 
-// This function reads the settings written in the .env file.
+// This function reads the details written in the .env file.
 function load_env_file(string $path): array
 {
     $vars = [];

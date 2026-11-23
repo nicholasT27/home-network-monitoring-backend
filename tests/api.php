@@ -42,7 +42,7 @@ function call(string $action, string $method = 'GET', ?array $body = null, array
     foreach ($http_response_header ?? [] as $h) if (preg_match('#^HTTP/\S+\s+(\d{3})#', $h, $m)) $code = (int) $m[1];
     return [$code, json_decode((string) $out, true), $http_response_header ?? []];
 }
-// This function signs in for a test and gives back the login details.
+// This function puts the login token into the request, so the test is signed in.
 function auth(string $token): array { return ["X-Auth-Token: $token"]; }
 
 [$c] = call('health');
