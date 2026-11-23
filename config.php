@@ -1,10 +1,4 @@
 <?php
-// Where the settings come from. Later ones win over earlier ones:
-//   1. the default values written below
-//   2. the .env file next to this file (when you run it on your own computer)
-//   3. settings typed into a web host's control panel
-// The names of all the settings are in the list just below.
-
 // This function reads the details written in the .env file.
 function load_env_file(string $path): array
 {
