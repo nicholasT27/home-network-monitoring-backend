@@ -25,7 +25,11 @@ You need a computer at home that stays on and is connected to your Wi-Fi or rout
 
 **1. Install VS Code (recommended).** Download it free from https://code.visualstudio.com and install it. It lets you open the project folder, create the `.env` file and run the commands in one window.
 
-**2. Install PHP 8 or newer** on that computer. Check it by typing `php -v` in a terminal. (Windows: install [XAMPP](https://www.apachefriends.org). Mac: `brew install php`.)
+**2. Install PHP 8 or newer.** VS Code does not come with PHP, but you can install PHP from inside VS Code: choose **Terminal > New Terminal** and type the command for your computer, then close and reopen VS Code.
+- **Mac:** `brew install php` (needs [Homebrew](https://brew.sh); the page shows its one-line install).
+- **Windows:** `winget install PHP.PHP.8.3`
+
+Check it by typing `php -v` in the terminal; it should show a version starting with 8. On Windows also type `php -m` and look for `openssl` in the list. If `openssl` is missing, the agent cannot connect to the dashboard's server; install [XAMPP](https://www.apachefriends.org/) instead, which has it switched on.
 
 **3. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it. Then open VS Code and choose **File > Open Folder** and pick the unzipped folder.
 
