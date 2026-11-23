@@ -31,7 +31,7 @@ You need a computer at home that stays on and is connected to your Wi-Fi or rout
 
 Check it by typing `php -v` in the terminal; it should show a version starting with 8. On Windows also type `php -m` and look for `openssl` in the list. If `openssl` is missing, the agent cannot connect to the dashboard's server: use XAMPP's PHP instead, as described in [Using XAMPP's PHP](#using-xampps-php) below.
 
-**3. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it. Then in VS Code choose **File > Open Folder** and pick the unzipped folder. Nothing else needs installing: this project has no extra packages, so there is no `npm install`; PHP is all it needs.
+**3. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it. Then in VS Code choose **File > Open Folder** and pick the unzipped folder. If you already use git, you can instead clone the repository with `git clone https://github.com/nicholasT27/home-network-monitoring-backend.git`. Nothing else needs installing: this project has no extra packages, so there is no `npm install`; PHP is all it needs.
 
 **4. Sign in.** Open https://home-network-monitoring-frontend.pages.dev and sign in with the test account:
 
