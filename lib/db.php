@@ -32,7 +32,7 @@ function parse_db_settings(callable $env): ?array
     return null;
 }
 
-// This function tidies up the table plan.
+// This function tidies up the raw SQL file, so the existing data is not deleted.
 function schema_statements(string $sql): array
 {
     $sql = preg_replace('/^--.*$/m', '', $sql);
