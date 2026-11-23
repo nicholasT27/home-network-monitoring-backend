@@ -23,7 +23,7 @@ Built as the final year project for the CSN Project (TSN309/10), Wawasan Open Un
 
 You need a computer at home that stays on and is connected to your Wi-Fi or router (Windows, Mac or Linux).
 
-**1. Install VS Code (recommended).** Download it free from https://code.visualstudio.com and install it. It lets you open the project folder, create the `.env` file and run the commands in one window.
+**1. Install VS Code (recommended).** Download it free from https://code.visualstudio.com and install it. It lets you open the project folder, edit the `.env` file and run the commands in one window.
 
 **2. Install PHP 8 or newer.** VS Code does not come with PHP, but you can install PHP from inside VS Code: choose **Terminal > New Terminal** and type the command for your computer, then close and reopen VS Code.
 - **Mac:** `brew install php` (needs [Homebrew](https://brew.sh); the page shows its one-line install).
@@ -54,7 +54,7 @@ Check it by typing `php -v` in the terminal; it should show a version starting w
 
 ![Network and alerts](docs/images/03-network-and-email.png)
 
-**6. Connect the home agent.** In the **Home agent** panel click **Copy**. In VS Code open the file named `.env` in the project folder (it is already there). Replace its two lines (`AGENT_API_URL` and `AGENT_KEY`) with the two lines you copied, and save the file.
+**6. Connect the home agent.** In the **Home agent** panel click **Copy**. In VS Code open the file named `.env` in the project folder (it is already there). Replace its two lines (`AGENT_API_URL` and `AGENT_KEY`) with the two lines you copied, and save the file. Keep your agent key private: do not share the `.env` file or put it on GitHub.
 
 ![Home agent panel](docs/images/05-home-agent-panel.png)
 
@@ -123,7 +123,7 @@ XAMPP is an alternative way to get PHP (it already has `openssl` switched on). Y
 | What you see | What to do |
 |---|---|
 | `php: command not found` | PHP is not installed. Install it and open a new terminal |
-| Home agent stays Offline | Copy the two lines from the Home agent panel again and check the `.env` file name (it starts with a dot) |
+| Home agent stays Offline | Click **Copy** in the Home agent panel again, paste both lines over the two lines in the `.env` file, and save it |
 | `ARP check: OFF` | Start the agent with `sudo` (Mac or Linux) or from an Administrator terminal (Windows) |
 | Scan finds 0 devices | The network range is wrong. Check the first three numbers against your computer's IP address |
 | No alert emails | Click **Send test email**. Alerts still appear in the dashboard |
