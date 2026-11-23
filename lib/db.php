@@ -1,6 +1,6 @@
 <?php
 
-// This function finds the MySQL details (address, name, username, password) in the settings, so the app can connect to MySQL.
+// This function helps the application connect to the MySQL database.
 function parse_db_settings(callable $env): ?array
 {
     $first = function (array $names) use ($env): ?string {
