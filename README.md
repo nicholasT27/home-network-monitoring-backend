@@ -55,7 +55,7 @@ Then choose **File > Open Folder** in VS Code and pick the new `home-network-mon
   - **Windows:** type `ipconfig`. Under **Wireless LAN adapter Wi-Fi** (or **Ethernet adapter** if you use a cable) find the line **IPv4 Address**, for example `192.168.0.151`.
   - **Mac:** type `ipconfig getifaddr en0`. It prints the address, for example `192.168.0.151`. (If it prints nothing, try `ipconfig getifaddr en1`.)
 
-  Now keep the first three numbers and end with `.0/24`: `192.168.0.151` becomes `192.168.0.0/24`. Type that in the **Your network range** box and click **Save network**.
+  Now keep the first three numbers and end with `.0/24`: `192.168.0.151` becomes `192.168.0.0/24`. Type that in the **Your network range** box and click **Save network**. (Not sure? See [Finding your network range](#finding-your-network-range) below.)
 - Alert email: type the address that should receive alerts, click **Save email**, then **Send test email**.
 
 ![Network and alerts](docs/images/03-network-and-email.png)
@@ -80,6 +80,30 @@ The first line should say `ARP check: ON`. The Home agent panel turns **Online**
 ![A new unknown device](docs/images/08-new-unknown-device.png)
 
 To stop, click in the VS Code terminal and press `Ctrl+C`.
+
+## Finding your network range
+
+The **network range** is the group of addresses on your home network that the agent checks. Every device at home has an address like `192.168.0.151`; devices on the same network share the first three numbers, and only the last number changes. So the range is those three numbers, then `.0/24`.
+
+**General way, on any device:**
+1. Find the IP address of any device that is connected to your Wi-Fi (your computer, or your phone: open its Wi-Fi settings and tap your network's name or the "i" icon, then look for **IP address**).
+2. Write down the first three numbers, for example `192.168.0` from `192.168.0.151`.
+3. Add `.0/24` at the end: `192.168.0.0/24`.
+
+**Another way:** your router's own address (also called the default gateway) is on the same network. It is usually printed on a sticker on the router, for example `192.168.0.1` or `192.168.1.1`. Take its first three numbers and add `.0/24`.
+
+**Common ranges at home**
+
+| If your address starts with | Your range is |
+|---|---|
+| `192.168.0.` | `192.168.0.0/24` |
+| `192.168.1.` | `192.168.1.0/24` |
+| `10.0.0.` | `10.0.0.0/24` |
+| `192.168.100.` | `192.168.100.0/24` |
+
+**Check:** after you click **Save network** and scan, your own computer and your router should appear in the device list. If the list is empty, the range is wrong: check the first three numbers again.
+
+(For almost every home network `/24` is right. If your router uses a bigger network, the dashboard accepts ranges from `/22` to `/30`.)
 
 ## Using XAMPP's PHP
 
