@@ -1,6 +1,7 @@
 <?php
 // Sends the alert emails: through an email account (SMTP, for example Gmail) when one is set up, otherwise with PHP's built-in mail().
 
+// This function is used to send an email (for the alert emails and the test email).
 function send_alert_email(array $config, string $to, string $subject, string $body): bool
 {
     if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -13,6 +14,7 @@ function send_alert_email(array $config, string $to, string $subject, string $bo
     return @mail($to, $subject, $body, "From: $from\r\nContent-Type: text/plain; charset=utf-8");
 }
 
+// This function does the actual sending through an email account, such as Gmail.
 function smtp_send(array $c, string $from, string $to, string $subject, string $body): bool
 {
     $scheme = ($c['smtp_secure'] ?? 'ssl') === 'ssl' ? 'ssl' : 'tcp';

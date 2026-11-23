@@ -36,6 +36,7 @@ function route_settings(PDO $pdo, array $config, array $user, string $method): v
     json_out(['ok' => true]);
 }
 
+// This function sends a test email, so the user can check that alert emails work.
 function route_test_email(PDO $pdo, array $config, array $user, string $method): void
 {
     if ($method !== 'POST') fail('POST required', 405);

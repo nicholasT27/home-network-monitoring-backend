@@ -13,6 +13,7 @@ function add_history(PDO $pdo, int $uid, string $mac, ?string $ip, ?string $host
         ->execute([$uid, $mac, $ip, $host, $event, $at]);
 }
 
+// This function saves a new alert and sends an email to tell the user about it.
 function raise_alert(PDO $pdo, array $config, int $uid, string $type, string $mac, ?string $ip, ?string $host, string $message, string $at): void
 {
     $to = (string) (user_by_id($pdo, $uid)['alert_email'] ?? '');
