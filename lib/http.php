@@ -1,5 +1,5 @@
 <?php
-// CORS headers (the fix for the cross-origin blocking issue), JSON helpers and auth tokens.
+// Helpers for web requests: the headers that let the dashboard talk to this server (CORS), sending JSON answers, and login tokens.
 
 function send_cors(array $config): void
 {
@@ -44,7 +44,7 @@ function make_token(array $config, int $userId): string
     return $payload . '.' . b64url(hash_hmac('sha256', $payload, $config['auth_secret'], true));
 }
 
-// Returns the user id the token was issued to, or null if it is invalid or expired.
+// Gives back the id of the user the login token belongs to, or null if the token is not valid or has run out.
 function token_user(array $config, string $token): ?int
 {
     $parts = explode('.', $token);

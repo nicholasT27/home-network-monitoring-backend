@@ -1,5 +1,5 @@
 <?php
-// The signed-in user's own account: status summary, network range / alert email, test email.
+// The signed-in user's own account: summary, network range, alert email and test email.
 
 function route_status(PDO $pdo, array $config, array $user, string $method): void
 {

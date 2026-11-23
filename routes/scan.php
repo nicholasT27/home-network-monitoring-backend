@@ -1,5 +1,5 @@
 <?php
-// "Scan now": runs the scan on this server, or asks the user's home agent to scan (SCAN_MODE=agent).
+// "Scan now": scans on this server, or asks the user's home agent to scan (SCAN_MODE=agent).
 
 function route_scan(PDO $pdo, array $config, array $user, string $method): void
 {

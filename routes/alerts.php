@@ -1,5 +1,5 @@
 <?php
-// Open alerts of the signed-in user, and dismissing them.
+// The signed-in user's open alerts, and dismissing them.
 
 function route_alerts(PDO $pdo, array $config, array $user, string $method): void
 {

@@ -1,5 +1,5 @@
 <?php
-// Accounts. Every household has one user; all data rows carry that user's id.
+// Accounts. Each household has one account, and everything saved (devices, alerts, history) is labelled with that account's id.
 
 require_once __DIR__ . '/db.php';
 
@@ -55,17 +55,17 @@ function login_user(PDO $pdo, string $email, string $password): ?array
     return ($user && password_verify($password, $user['password_hash'])) ? $user : null;
 }
 
-// The scan range for a user: their own setting, else the server default.
+// The network range to scan for this user: the one they chose, or the server's default.
 function user_subnet(array $user, array $config): string
 {
     return $user['subnet'] ?: $config['subnet'];
 }
 
-// Validates a user-entered range ("192.168.0.0/24") and returns it normalised to the network address.
+// Checks a network range typed by the user (like 192.168.0.0/24) and tidies it, for example 192.168.0.124/24 becomes 192.168.0.0/24.
 function normalise_subnet(string $cidr): string
 {
     $cidr = trim($cidr);
-    cidr_hosts($cidr);   // throws InvalidArgumentException when invalid
+    cidr_hosts($cidr);   // stops with an error if the range is not valid
     [$ip, $prefix] = explode('/', $cidr);
     $mask = (~0 << (32 - (int) $prefix)) & 0xFFFFFFFF;
     return long2ip(ip2long($ip) & $mask) . '/' . (int) $prefix;

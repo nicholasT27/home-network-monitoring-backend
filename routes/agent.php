@@ -1,5 +1,5 @@
 <?php
-// Home agent routes. Authenticated by the user's personal agent key, not a dashboard login.
+// Routes for the home agent. The agent proves who it is with the user's personal agent key, not a dashboard login.
 
 function route_agent(PDO $pdo, array $config, string $action, string $method): void
 {

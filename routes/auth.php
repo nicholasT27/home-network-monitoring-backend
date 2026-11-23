@@ -1,5 +1,5 @@
 <?php
-// Public routes: create an account and sign in. Both return a signed token.
+// Open routes: create an account and sign in. Both give back a signed login token.
 
 function route_register(PDO $pdo, array $config): void
 {
@@ -18,7 +18,7 @@ function route_login(PDO $pdo, array $config): void
     $b = json_body();
     $user = login_user($pdo, (string) ($b['email'] ?? ''), (string) ($b['password'] ?? ''));
     if (!$user) {
-        sleep(1);   // slows down password guessing
+        sleep(1);   // a one-second pause makes guessing passwords slow
         fail('Incorrect email or password', 401);
     }
     json_out(['token' => make_token($config, (int) $user['id'])]);

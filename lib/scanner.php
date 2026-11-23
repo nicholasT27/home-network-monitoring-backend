@@ -1,6 +1,6 @@
 <?php
-// Network discovery. A ping sweep first makes every active device answer, which fills the host's
-// ARP cache; only then is the cache read. Reading the cache alone misses idle devices.
+// Finding the devices on the network. First every address is pinged, which makes active devices answer and fills this
+// computer's list of neighbours (the ARP list). Only then is that list read. Reading it without pinging first would miss quiet devices.
 
 require_once __DIR__ . '/vendor.php';
 
@@ -28,15 +28,15 @@ function is_windows(): bool
     return PHP_OS_FAMILY === 'Windows';
 }
 
-// Pings every address and returns the IPs that actually replied. A reply (TTL in the output) is the
-// proof a device is online now: the ARP cache alone keeps entries for ~20 minutes after a device leaves.
+// Pings every address and returns the ones that actually answered. An answer (shown as TTL in the output) is
+// proof that the device is online right now: the computer keeps old entries in its neighbour list for about 20 minutes after a device leaves.
 function ping_sweep(array $ips, int $batch = 64): array
 {
     $alive = [];
     foreach (array_chunk($ips, $batch) as $chunk) {
         $procs = [];
         foreach ($chunk as $ip) {
-            // Timeout units differ: Windows -w and macOS -W are milliseconds, Linux -W is seconds.
+            // The waiting-time setting uses different units: Windows -w and Mac -W are milliseconds, Linux -W is seconds.
             $cmd = is_windows() ? ['ping', '-n', '1', '-w', '500', $ip]
                 : (PHP_OS_FAMILY === 'Darwin' ? ['ping', '-c', '1', '-W', '1000', $ip] : ['ping', '-c', '1', '-W', '1', $ip]);
             $spec = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
@@ -59,10 +59,10 @@ function ping_sweep(array $ips, int $batch = 64): array
     return $alive;
 }
 
-// Second pass after the ping sweep: asks the network "who has this address?" again for every address that did not answer
-// the ping. Sending a tiny UDP packet makes this computer broadcast an ARP request, which does not depend on ping and
-// cannot be blocked by a device's firewall. A device that is asleep or slow gets several tries over a few seconds.
-// Only the ARP cache is read afterwards, so this function just sends the probes and waits between the rounds.
+// Second pass after pinging: asks the network "who has this address?" again for every address that did not answer
+// the ping. Sending a tiny message makes this computer ask that question out loud (an ARP request). This does not
+// depend on ping, and a device's firewall cannot block it. A device that is asleep or slow gets several tries over a few seconds.
+// The answers are read afterwards, so this function only sends the questions and waits between the rounds.
 function arp_probe(array $ips, int $rounds = 3, int $pauseUs = 700000): void
 {
     for ($r = 0; $r < $rounds && $ips; $r++) {
@@ -73,14 +73,14 @@ function arp_probe(array $ips, int $rounds = 3, int $pauseUs = 700000): void
                 fclose($sock);
             }
         }
-        usleep($pauseUs);   // let the ARP answers arrive
+        usleep($pauseUs);   // give the devices a moment to answer
     }
 }
 
-// Clears this computer's ARP cache so that, after the ping sweep, an entry only exists if that device answered an ARP
-// request during this scan. ARP cannot be blocked by a device's firewall, so this finds devices that ignore pings
-// (for example a Windows laptop). It needs administrator rights: sudo on macOS and Linux, an Administrator terminal
-// on Windows. Returns true only when the cache was really cleared; otherwise the scan works as before.
+// Clears this computer's list of neighbours (the ARP list) so that, after pinging, a device is only in the list if it
+// answered during this scan. A device cannot hide from this question, so it finds devices that ignore pings
+// (for example a Windows laptop). It needs administrator rights: sudo on Mac and Linux, an Administrator terminal
+// on Windows. Gives back true only if the list was really cleared; otherwise the scan works as before.
 function flush_arp_cache(): bool
 {
     if (is_windows()) {
@@ -98,9 +98,9 @@ function flush_arp_cache(): bool
     return $code === 0 && !preg_match('/elevat|denied|not permitted|failed|not found/i', implode(' ', $out));
 }
 
-// Which addresses count as online now. A ping reply always counts. After a successful cache flush, an ARP entry
-// also counts: it can only be there because the device answered an ARP request during this scan. Without the
-// flush an entry could be a stale leftover (they last about 20 minutes), so only a ping reply is trusted.
+// Decides which addresses count as online. An answer to a ping always counts. If the neighbour list was cleared first, an
+// entry in it also counts: it can only be there because the device answered during this scan. Without clearing,
+// an entry might be an old leftover (they last about 20 minutes), so only a ping answer is trusted.
 function online_ips(array $pingReplies, array $arpEntries, bool $cacheFlushed): array
 {
     $alive = $pingReplies;
@@ -117,7 +117,7 @@ function normalise_mac(string $mac): string
     return strtoupper(str_replace('-', ':', $mac));
 }
 
-// Parses `arp -a` (Windows/macOS/Linux) and `ip neigh` output into [ip => mac], inside $cidr only.
+// Reads the output of the `arp -a` command (Windows, Mac, Linux) or `ip neigh` (Linux) and turns it into a list of address => hardware ID, only for the chosen range.
 function parse_arp(string $text, string $cidr): array
 {
     $hosts = array_flip(cidr_hosts($cidr));
@@ -154,8 +154,8 @@ function resolve_hostname(string $ip): ?string
     return ($name === false || $name === $ip || $name === '') ? null : $name;
 }
 
-// Returns [['mac' => ..., 'ip' => ..., 'hostname' => ..., 'alive' => bool], ...]. 'alive' is false for devices
-// that are only a (possibly stale) ARP-cache entry and did not answer a ping (unless the ARP cache was flushed, see online_ips).
+// Gives back a list of devices, each with its hardware ID ('mac'), address ('ip'), name ('hostname') and whether it answered ('alive').
+// 'alive' is false for devices that are only an old leftover entry and did not answer (unless the list was cleared first, see online_ips).
 function scan_network(array $config, ?int $deadline = null, int $demoRound = 1): array
 {
     if (($config['scan_mode'] ?? 'live') === 'demo') {
@@ -163,23 +163,23 @@ function scan_network(array $config, ?int $deadline = null, int $demoRound = 1):
     }
     $cidr = $config['subnet'];
     $flushed = flush_arp_cache();
-    $pinged = ping_sweep(cidr_hosts($cidr));   // pass 1: ping sweep (a ping also makes the device answer or ignore an ARP request)
+    $pinged = ping_sweep(cidr_hosts($cidr));   // pass 1: ping every address (this also makes devices announce themselves)
     if ($flushed) {
-        // Pass 2: ping sweep is done; now ask ARP again for every address that did not answer the ping.
+        // Pass 2: pinging is done; now ask again, by ARP, for every address that did not answer the ping.
         arp_probe(array_values(array_filter(cidr_hosts($cidr), fn($ip) => !isset($pinged[$ip]))));
     }
     $arp = read_arp_cache($cidr);
     $alive = online_ips($pinged, $arp, $flushed);
     $devices = [];
     foreach ($arp as $ip => $mac) {
-        // Skip reverse-DNS lookups if the time budget is nearly spent, so the scan still finishes.
+        // Skip looking up device names if time is nearly up, so the scan still finishes.
         $skipDns = $deadline !== null && time() > $deadline;
         $devices[] = ['mac' => $mac, 'ip' => $ip, 'hostname' => $skipDns ? null : resolve_hostname($ip), 'alive' => isset($alive[$ip])];
     }
     return $devices;
 }
 
-// Simulated network for demonstrations: a fixed household, plus an intruder from the 3rd scan on.
+// A pretend network for demonstrations: a fixed household, plus an unknown intruder from the 3rd scan on.
 function demo_scan(int $n): array
 {
     $devices = [
@@ -189,7 +189,7 @@ function demo_scan(int $n): array
         ['24:0A:C4:9A:12:34', '192.168.1.31', 'smart-plug-kitchen'],
         ['44:65:0D:77:88:99', '192.168.1.33', 'echo-dot'],
     ];
-    // A phone with a rotating private MAC: same hostname, new MAC every 4 scans.
+    // A phone that keeps changing its private hardware ID: same name, new ID every 4 scans.
     $devices[] = [sprintf('DA:A1:19:00:00:%02X', intdiv($n, 4) % 256), '192.168.1.40', 'alex-iphone'];
     if ($n >= 3) {
         $devices[] = ['5E:CF:7F:0B:AD:01', '192.168.1.77', null];

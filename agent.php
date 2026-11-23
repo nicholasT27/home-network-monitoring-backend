@@ -1,10 +1,12 @@
 <?php
-// Home agent: scans the local network and sends the results to the (cloud) API.
-// Run it on an always-on computer inside the home network:
-//   php agent.php          keep running: scans when the dashboard asks, and every AGENT_INTERVAL_S seconds
-//   php agent.php --once   scan once and exit
-// Settings (environment variables or a .env file next to this file): AGENT_API_URL, AGENT_KEY (both shown in your dashboard), AGENT_INTERVAL_S.
-// The network range to scan is the one you enter in the dashboard.
+// The home agent. It looks at your home network, finds which devices are connected, and sends the list to the
+// dashboard's server.
+// Run it on a computer at home that stays switched on:
+//   php agent.php          keeps running: scans when you click Scan now, and again every 2 minutes
+//   php agent.php --once   scans one time and then stops
+// It reads two settings from the .env file next to this file: AGENT_API_URL and AGENT_KEY.
+// Both are shown in the dashboard's Home agent panel.
+// The part of the network to scan is the range you type in the dashboard.
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
 }
@@ -32,8 +34,8 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
         }
         $out = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = curl_error($ch);   // empty when the request itself worked
-    } else {   // PHP without the curl extension: use plain streams (https needs the openssl extension)
+        $err = curl_error($ch);   // stays empty when the request worked
+    } else {   // This PHP has no curl add-on, so use PHP's basic web request instead (secure https links need the openssl add-on)
         $ctx = stream_context_create(['http' => [
             'method' => $body !== null ? 'POST' : 'GET', 'header' => implode("\r\n", $headers),
             'content' => $body !== null ? json_encode($body) : '', 'timeout' => 30, 'ignore_errors' => true,
@@ -47,7 +49,7 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
     }
     $data = json_decode((string) $out, true);
     if ($code !== 200 || !is_array($data)) {
-        // Code 0 means no reply at all (wrong address, no internet, certificate problem), so say why.
+        // Code 0 means no answer came back at all (wrong address, no internet, or a security certificate problem), so explain why.
         $why = $code === 0 ? "could not connect to {$config['agent_api_url']}" . ($err !== '' ? " ($err)" : '') : substr((string) $out, 0, 200);
         fwrite(STDERR, "[" . date('H:i:s') . "] API error $action ($code): $why\n");
         return null;
@@ -85,7 +87,7 @@ $last = 0;
 while (true) {
     $poll = agent_call($config, 'agent_poll');
     if ($poll !== null && (($poll['scan_requested'] ?? false) || time() - $last >= $config['agent_interval_s'])) {
-        agent_scan_and_send($config, $poll['subnet']);   // range comes from the dashboard setting
+        agent_scan_and_send($config, $poll['subnet']);   // the range to scan comes from the dashboard
         $last = time();
     }
     sleep(5);

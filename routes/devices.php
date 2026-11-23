@@ -1,5 +1,5 @@
 <?php
-// Devices of the signed-in user and their connection history.
+// The signed-in user's devices and their connection history.
 
 function route_devices(PDO $pdo, array $config, array $user, string $method): void
 {
@@ -17,7 +17,7 @@ function route_device_update(PDO $pdo, array $config, array $user, string $metho
 
     if (isset($b['status'])) {
         if (!in_array($b['status'], ['trusted', 'unknown'], true)) fail('Invalid status');
-        // Trusting a device resets any suspicion; its current identity becomes the baseline.
+        // Trusting a device clears any suspicion; its current name and maker become the new normal.
         $pdo->prepare('UPDATE devices SET status = ?, suspicious = 0, suspicious_reason = NULL WHERE user_id = ? AND mac = ?')->execute([$b['status'], $uid, $mac]);
         if ($b['status'] === 'trusted') {
             $pdo->prepare('UPDATE alerts SET acknowledged_at = ? WHERE user_id = ? AND mac = ? AND acknowledged_at IS NULL')->execute([now(), $uid, $mac]);

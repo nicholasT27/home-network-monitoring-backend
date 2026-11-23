@@ -1,5 +1,5 @@
 <?php
-// Alert emails: SMTP when smtp_host is configured (e.g. Gmail), otherwise PHP's mail().
+// Sends the alert emails: through an email account (SMTP, for example Gmail) when one is set up, otherwise with PHP's built-in mail().
 
 function send_alert_email(array $config, string $to, string $subject, string $body): bool
 {
@@ -40,7 +40,7 @@ function smtp_send(array $c, string $from, string $to, string $subject, string $
         return true;
     };
 
-    $body = preg_replace('/^\./m', '..', str_replace("\r\n", "\n", $body));   // dot-stuffing
+    $body = preg_replace('/^\./m', '..', str_replace("\r\n", "\n", $body));   // a line that starts with a dot is doubled, as the email rules require
     $message = "From: $from\r\nTo: $to\r\nSubject: $subject\r\nDate: " . date('r')
         . "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" . str_replace("\n", "\r\n", $body);
 

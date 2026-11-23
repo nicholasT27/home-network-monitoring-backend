@@ -1,8 +1,8 @@
 <?php
-// Scheduled scan for every account, independent of the dashboard (SCAN_MODE=live or demo on this server).
-// Run from cron / Windows Task Scheduler, e.g. every 2 minutes:
+// Scans every account on a schedule, without the dashboard (SCAN_MODE=live or demo on this server).
+// Set it to run from cron or Windows Task Scheduler, for example every 2 minutes:
 //   php /path/to/this/folder/cli_scan.php
-// (In SCAN_MODE=agent each user's home agent schedules its own scans; run agent.php instead.)
+// (In SCAN_MODE=agent each home agent schedules its own scans, so run agent.php instead.)
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
 }

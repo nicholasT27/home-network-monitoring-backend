@@ -1,6 +1,6 @@
 <?php
-// Small built-in OUI (first 3 MAC bytes) table of common home-network manufacturers.
-// Extend it, or swap in the full IEEE list, if more detail is needed.
+// A short built-in list that turns the first part of a MAC address (a device's hardware ID) into the maker's name,
+// for common home brands. Add more names here, or use the full public list, for more detail.
 
 function oui_table(): array
 {
@@ -22,7 +22,8 @@ function oui_table(): array
     ];
 }
 
-// IEEE 802: bit 1 of the first octet marks a locally administered (e.g. randomised) address.
+// Phones often use a made-up (private) hardware ID so they cannot be tracked. A made-up ID can be recognised
+// by one marker in its first part; this function checks for that marker.
 function is_private_mac(string $mac): bool
 {
     return (hexdec(substr($mac, 0, 2)) & 0x02) !== 0;
