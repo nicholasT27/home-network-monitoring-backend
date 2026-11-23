@@ -27,7 +27,14 @@ You need a computer at home that stays on and is connected to your Wi-Fi or rout
 
 **2. Download this project.** Click the green **Code** button at the top of this page, then **Download ZIP**, and unzip it.
 
-**3. Create an account.** Open https://home-network-monitoring-frontend.pages.dev, click **Create an account**, type an email and a password (at least 8 characters).
+**3. Sign in.** Open https://home-network-monitoring-frontend.pages.dev and sign in with the test account:
+
+| | |
+|---|---|
+| Email | `test@gmail.com` |
+| Password | `test12345` |
+
+(You can also click **Create an account** and use your own email and a password of at least 8 characters.)
 
 ![Create an account](docs/images/02-create-account.png)
 
