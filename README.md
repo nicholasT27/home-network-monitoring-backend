@@ -54,7 +54,7 @@ Check it by typing `php -v` in the terminal; it should show a version starting w
 
 ![Network and alerts](docs/images/03-network-and-email.png)
 
-**6. Connect the home agent.** In the **Home agent** panel click **Copy**. In VS Code choose **File > New File**, paste the two lines (`AGENT_API_URL` and `AGENT_KEY`), and save the file as `.env` in the project folder.
+**6. Connect the home agent.** In the **Home agent** panel click **Copy**. In VS Code open the file named `.env` in the project folder (it is already there). Replace its two lines (`AGENT_API_URL` and `AGENT_KEY`) with the two lines you copied, and save the file.
 
 ![Home agent panel](docs/images/05-home-agent-panel.png)
 

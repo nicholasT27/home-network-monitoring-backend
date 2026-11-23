@@ -18,7 +18,7 @@ if ($config['agent_api_url'] !== '' && !preg_match('#^https?://[^/\s]+#i', $conf
     exit(1);
 }
 if ($config['agent_api_url'] === '' || $config['agent_key'] === '') {
-    fwrite(STDERR, "Set AGENT_API_URL and AGENT_KEY first (see agent.env.example).\n");
+    fwrite(STDERR, "Set AGENT_API_URL and AGENT_KEY first (open the .env file next to agent.php).\n");
     exit(1);
 }
 
