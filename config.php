@@ -41,8 +41,6 @@ $config = [
     'db_user'      => null,
     'db_pass'      => null,
 
-    // Only used in demo mode. For real scans each user must enter their own network range in the dashboard first.
-    'subnet'       => '192.168.1.0/24',
     // 'live'  = this server scans the network it is connected to (use when the server runs at home)
     // 'agent' = each user's home agent (agent.php) scans and sends the results here (use when the server is online)
     // 'demo'  = pretend devices, for trying the system without a real network
@@ -72,7 +70,7 @@ $config = [
 ];
 
 $map = [
-    'subnet' => 'SUBNET', 'scan_mode' => 'SCAN_MODE',
+    'scan_mode' => 'SCAN_MODE',
     'auth_secret' => 'AUTH_SECRET', 'alert_from' => 'ALERT_FROM',
     'smtp_host' => 'SMTP_HOST', 'smtp_port' => 'SMTP_PORT', 'smtp_secure' => 'SMTP_SECURE',
     'smtp_user' => 'SMTP_USER', 'smtp_pass' => 'SMTP_PASS',

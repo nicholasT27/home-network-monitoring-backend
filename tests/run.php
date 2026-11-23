@@ -9,7 +9,7 @@ $fail = 0;
 // This function records whether one test passed or failed.
 function check(string $name, bool $ok): void { global $fail; echo ($ok ? 'PASS' : 'FAIL') . "  $name\n"; if (!$ok) $fail++; }
 
-$config = ['subnet' => '192.168.1.0/24', 'scan_mode' => 'live', 'alert_email' => '', 'alert_from' => 'x@y', 'smtp_host' => '', 'smtp_user' => '',
+$config = ['scan_mode' => 'live', 'alert_email' => '', 'alert_from' => 'x@y', 'smtp_host' => '', 'smtp_user' => '',
            'scan_target_s' => 120, 'auth_secret' => 's3cret', 'token_ttl_s' => 60];
 $pdoOptions = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC];
 if (getenv('TEST_DB_HOST') !== false) {
@@ -135,10 +135,10 @@ check("Bob's first device is unknown while Alice's identical MAC stays trusted",
     $pdo->query("SELECT status FROM devices WHERE user_id=$bid AND mac='3C:5A:B4:11:22:33'")->fetchColumn() === 'unknown'
     && $pdo->query("SELECT status FROM devices WHERE user_id=$uid AND mac='3C:5A:B4:11:22:33'")->fetchColumn() === 'trusted');
 
-$demoUser = user_by_id($pdo, $uid);
+$demoUser = array_merge(user_by_id($pdo, $uid), ['subnet' => '192.168.1.0/24']);
 $live = array_merge($config, ['scan_mode' => 'live']);
-check('no network range typed: nothing to scan in live mode', user_subnet(['subnet' => null], $live) === '');
-check('network range typed: it is used', user_subnet(['subnet' => '10.0.0.0/24'], $live) === '10.0.0.0/24');
+check('no network range typed: nothing to scan in live mode', user_subnet(['subnet' => null]) === '');
+check('network range typed: it is used', user_subnet(['subnet' => '10.0.0.0/24']) === '10.0.0.0/24');
 try { run_scan($pdo, $live, array_merge($demoUser, ['subnet' => null])); $noRange = false; } catch (RuntimeException $e) { $noRange = true; }
 check('scan refuses to run before a network range is entered', $noRange);
 $demo = array_merge($config, ['scan_mode' => 'demo']);
@@ -147,7 +147,7 @@ check('second scan runs after the first finished', is_array(run_scan($pdo, $demo
 $pdo->exec("INSERT INTO settings (k, v) VALUES ('scan_lock_$uid', '" . time() . "')");
 try { run_scan($pdo, $demo, $demoUser); $blocked = false; } catch (RuntimeException $e) { $blocked = true; }
 check('concurrent scan for the same user is rejected', $blocked);
-check("another user's scan is not blocked by Alice's lock", is_array(run_scan($pdo, $demo, user_by_id($pdo, $bid))));
+check("another user's scan is not blocked by Alice's lock", is_array(run_scan($pdo, $demo, array_merge(user_by_id($pdo, $bid), ['subnet' => '192.168.1.0/24']))));
 $pdo->exec("UPDATE settings SET v = '" . (time() - 1000) . "' WHERE k='scan_lock_$uid'");
 check('stale lock is ignored', is_array(run_scan($pdo, $demo, $demoUser)));
 
@@ -179,10 +179,10 @@ check('SMTP alert delivered to the fake server', $sent && str_contains($log, 'RC
 check('invalid recipient is not sent', !send_alert_email($smtpCfg, 'not-an-email', 's', 'b'));
 
 $run = proc_open([PHP_BINARY, '-r', 'echo json_encode(require "' . __DIR__ . '/../config.php");'],
-    [1 => ['pipe', 'w']], $pp, null, ['SUBNET' => '10.0.0.0/24', 'SCAN_MODE' => 'agent', 'DB_HOST' => 'db.example.com', 'DB_NAME' => 'x',
+    [1 => ['pipe', 'w']], $pp, null, ['SCAN_MODE' => 'agent', 'DB_HOST' => 'db.example.com', 'DB_NAME' => 'x',
     'SMTP_HOST' => 'smtp.gmail.com', 'SMTP_PORT' => '465', 'ALLOWED_ORIGINS' => 'https://app.example.com', 'ALLOW_REGISTRATION' => '0']);
 $cfg = json_decode(stream_get_contents($pp[1]), true); proc_close($run);
-check('config reads environment variables', ($cfg['subnet'] === '10.0.0.0/24' && $cfg['scan_mode'] === 'agent' && $cfg['smtp_port'] === 465
+check('config reads environment variables', ($cfg['scan_mode'] === 'agent' && $cfg['smtp_port'] === 465
     && str_contains($cfg['db_dsn'], 'host=db.example.com') && in_array('https://app.example.com', $cfg['allowed_origins'], true) && $cfg['allow_registration'] === false));
 
 check('scans recorded', $count('SELECT COUNT(*) FROM scans') >= 9);

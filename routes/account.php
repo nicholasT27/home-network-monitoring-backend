@@ -8,7 +8,7 @@ function route_status(PDO $pdo, array $config, array $user, string $method): voi
     json_out([
         'email' => $user['email'],
         'last_scan' => $st->fetch() ?: null,
-        'subnet' => user_subnet($user, $config),
+        'subnet' => user_subnet($user),
         'mode' => $config['scan_mode'],
         'scan_target_s' => $config['scan_target_s'],
         'alert_email' => $user['alert_email'] ?? '',

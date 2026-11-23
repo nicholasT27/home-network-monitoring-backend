@@ -165,7 +165,7 @@ function release_scan_lock(PDO $pdo, int $uid): void
 function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual'): array
 {
     $uid = (int) $user['id'];
-    if (user_subnet($user, $config) === '') {
+    if (user_subnet($user) === '') {
         throw new RuntimeException('Enter your network range first (in the Network & alerts box).');
     }
     $target = (int) ($config['scan_target_s'] ?? 120);
@@ -178,7 +178,7 @@ function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual
         $st = $pdo->prepare('SELECT COUNT(*) FROM scans WHERE user_id = ?');
         $st->execute([$uid]);
         $round = (int) $st->fetchColumn() + 1;
-        $found = scan_network(['subnet' => user_subnet($user, $config), 'scan_mode' => $config['scan_mode']], time() + 25, $round);
+        $found = scan_network(['subnet' => user_subnet($user), 'scan_mode' => $config['scan_mode']], time() + 25, $round);
         return process_scan($pdo, $config, $uid, $found, $source, $startedMs);
     } finally {
         release_scan_lock($pdo, $uid);
