@@ -13,7 +13,7 @@ function send_cors(array $config): void
     }
 }
 
-// This function sends an answer back to the dashboard.
+// This function sends the reply (such as the device list or an alert) back to the dashboard.
 function json_out($data, int $status = 200): void
 {
     http_response_code($status);
