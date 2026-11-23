@@ -13,7 +13,6 @@ function send_alert_email(array $config, string $to, string $subject, string $bo
     return @mail($to, $subject, $body, "From: $from\r\nContent-Type: text/plain; charset=utf-8");
 }
 
-// This function does the actual sending through an email account, such as Gmail.
 function smtp_send(array $c, string $from, string $to, string $subject, string $body): bool
 {
     $scheme = ($c['smtp_secure'] ?? 'ssl') === 'ssl' ? 'ssl' : 'tcp';
