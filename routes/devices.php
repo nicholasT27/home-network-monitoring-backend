@@ -1,6 +1,6 @@
 <?php
-// The signed-in user's devices and their connection history.
 
+// This function sends the list of the user's devices.
 function route_devices(PDO $pdo, array $config, array $user, string $method): void
 {
     $st = $pdo->prepare('SELECT * FROM devices WHERE user_id = ? ORDER BY online DESC, last_seen DESC');
@@ -8,6 +8,7 @@ function route_devices(PDO $pdo, array $config, array $user, string $method): vo
     json_out($st->fetchAll());
 }
 
+// This function saves changes to a device (name, trusted or not).
 function route_device_update(PDO $pdo, array $config, array $user, string $method): void
 {
     $uid = $user['id'];
@@ -17,7 +18,6 @@ function route_device_update(PDO $pdo, array $config, array $user, string $metho
 
     if (isset($b['status'])) {
         if (!in_array($b['status'], ['trusted', 'unknown'], true)) fail('Invalid status');
-        // Trusting a device clears any suspicion; its current name and maker become the new normal.
         $pdo->prepare('UPDATE devices SET status = ?, suspicious = 0, suspicious_reason = NULL WHERE user_id = ? AND mac = ?')->execute([$b['status'], $uid, $mac]);
         if ($b['status'] === 'trusted') {
             $pdo->prepare('UPDATE alerts SET acknowledged_at = ? WHERE user_id = ? AND mac = ? AND acknowledged_at IS NULL')->execute([now(), $uid, $mac]);
@@ -34,6 +34,7 @@ function route_device_update(PDO $pdo, array $config, array $user, string $metho
     json_out(['ok' => true]);
 }
 
+// This function removes a device from the list.
 function route_device_delete(PDO $pdo, array $config, array $user, string $method): void
 {
     $mac = strtoupper((string) (json_body()['mac'] ?? ''));
@@ -43,6 +44,7 @@ function route_device_delete(PDO $pdo, array $config, array $user, string $metho
     json_out(['ok' => true]);
 }
 
+// This function sends the connection history.
 function route_history(PDO $pdo, array $config, array $user, string $method): void
 {
     $mac = strtoupper((string) ($_GET['mac'] ?? ''));

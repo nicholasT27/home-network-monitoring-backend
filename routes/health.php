@@ -1,7 +1,6 @@
 <?php
-// A setup check page for a new host. It is off unless DEBUG=1 is set; turn it off again afterwards.
-// It lists which database settings exist (names only, never values) and whether the database can be reached.
 
+// This function shows a setup check page (only when DEBUG=1 is set).
 function route_health(array $config): void
 {
     $names = [];

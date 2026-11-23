@@ -1,13 +1,6 @@
 <?php
-// Talking to the database. The system uses MySQL (the tables are created automatically the first time).
-// SQLite, a single file, is used for testing.
 
-// Works out how to connect to the database from the settings. Hosts use different names for the same thing, so all of these are accepted:
-//   DB_DSN, or one web-style address (DATABASE_URL / DB_URL / MYSQL_URL = mysql://user:pass@host:port/name),
-//   or separate values (DB_HOST / MYSQL_HOST, DB_PORT, DB_NAME / DB_DATABASE / MYSQL_DATABASE,
-//   DB_USER / DB_USERNAME / MYSQL_USER, DB_PASS / DB_PASSWORD / MYSQL_PASSWORD).
-// $env is a function that gives back the value of a setting, or null if it is not set.
-// The result is the connection details ('dsn', 'user', 'pass'), or null if no database setting exists.
+// This function works out how to connect to the database from the settings.
 function parse_db_settings(callable $env): ?array
 {
     $first = function (array $names) use ($env): ?string {
@@ -39,8 +32,7 @@ function parse_db_settings(callable $env): ?array
     return null;
 }
 
-// Prepares the bundled MySQL table plan so it can safely run on a database that may already have tables:
-// comments and DROP TABLE lines are removed and CREATE TABLE becomes CREATE TABLE IF NOT EXISTS.
+// This function prepares the table plan so it can safely run on a database that already has tables.
 function schema_statements(string $sql): array
 {
     $sql = preg_replace('/^--.*$/m', '', $sql);
@@ -55,7 +47,7 @@ function schema_statements(string $sql): array
     return $out;
 }
 
-// The first time MySQL is used, create the tables automatically, so nobody has to import them by hand.
+// This function creates the database tables automatically the first time, so nobody has to import them by hand.
 function mysql_ensure_schema(PDO $pdo): void
 {
     if ($pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn() !== false) {
@@ -66,6 +58,7 @@ function mysql_ensure_schema(PDO $pdo): void
     }
 }
 
+// This function connects to the database (MySQL, or SQLite for testing).
 function db_connect(array $config): PDO
 {
     $dsn = $config['db_dsn'];
@@ -80,7 +73,6 @@ function db_connect(array $config): PDO
     if ($isSqlite) {
         $pdo->exec('PRAGMA busy_timeout = 5000');
         $pdo->exec('PRAGMA journal_mode = WAL');
-        // First run: create the tables from the bundled table plan.
         if ((int) $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'users'")->fetchColumn() === 0) {
             $pdo->exec(file_get_contents(__DIR__ . '/../schema.sqlite.sql'));
         }
@@ -90,7 +82,7 @@ function db_connect(array $config): PDO
     return $pdo;
 }
 
-// Makes sure the folder for the database file exists and cannot be opened from the web.
+// This function makes sure the folder for the SQLite test file exists and cannot be opened from the web.
 function sqlite_prepare_file(string $path): void
 {
     $dir = dirname($path);
@@ -100,7 +92,8 @@ function sqlite_prepare_file(string $path): void
     }
 }
 
+// This function gives back the current time in UTC (world time).
 function now(): string
 {
-    return gmdate('Y-m-d H:i:s');   // all saved times use UTC (world time); the dashboard shows them in the local time of the user
+    return gmdate('Y-m-d H:i:s');
 }

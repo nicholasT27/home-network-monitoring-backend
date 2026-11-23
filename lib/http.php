@@ -1,6 +1,6 @@
 <?php
-// Helpers for web requests: the headers that let the dashboard talk to this server (CORS), sending JSON answers, and login tokens.
 
+// This function allows the dashboard website to talk to this server.
 function send_cors(array $config): void
 {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
@@ -13,6 +13,7 @@ function send_cors(array $config): void
     }
 }
 
+// This function sends an answer back to the dashboard.
 function json_out($data, int $status = 200): void
 {
     http_response_code($status);
@@ -21,11 +22,13 @@ function json_out($data, int $status = 200): void
     exit;
 }
 
+// This function stops and sends back an error message.
 function fail(string $message, int $status = 400): void
 {
     json_out(['error' => $message], $status);
 }
 
+// This function reads the information sent by the dashboard or the agent.
 function json_body(): array
 {
     $raw = file_get_contents('php://input');
@@ -33,18 +36,20 @@ function json_body(): array
     return is_array($data) ? $data : [];
 }
 
+// This function turns text into a form that is safe to use inside a login token.
 function b64url(string $s): string
 {
     return rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
 }
 
+// This function creates a login token for a user.
 function make_token(array $config, int $userId): string
 {
     $payload = b64url(json_encode(['uid' => $userId, 'exp' => time() + $config['token_ttl_s']]));
     return $payload . '.' . b64url(hash_hmac('sha256', $payload, $config['auth_secret'], true));
 }
 
-// Gives back the id of the user the login token belongs to, or null if the token is not valid or has run out.
+// This function gives back the user the login token belongs to, or nothing if the token is wrong or has run out.
 function token_user(array $config, string $token): ?int
 {
     $parts = explode('.', $token);
@@ -59,6 +64,7 @@ function token_user(array $config, string $token): ?int
     return (is_array($payload) && ($payload['exp'] ?? 0) >= time() && isset($payload['uid'])) ? (int) $payload['uid'] : null;
 }
 
+// This function checks that the user is signed in and gives back who they are.
 function require_auth(array $config): int
 {
     $uid = token_user($config, $_SERVER['HTTP_X_AUTH_TOKEN'] ?? '');

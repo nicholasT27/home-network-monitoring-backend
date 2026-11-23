@@ -1,6 +1,6 @@
 <?php
-// The signed-in user's own account: summary, network range, alert email and test email.
 
+// This function sends the user's summary for the dashboard (device counts, settings, agent key).
 function route_status(PDO $pdo, array $config, array $user, string $method): void
 {
     $st = $pdo->prepare('SELECT * FROM scans WHERE user_id = ? ORDER BY id DESC LIMIT 1');
@@ -17,6 +17,7 @@ function route_status(PDO $pdo, array $config, array $user, string $method): voi
     ]);
 }
 
+// This function saves the user's network range and alert email.
 function route_settings(PDO $pdo, array $config, array $user, string $method): void
 {
     $b = json_body();

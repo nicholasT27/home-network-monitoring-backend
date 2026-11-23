@@ -1,6 +1,6 @@
 <?php
-// Open routes: create an account and sign in. Both give back a signed login token.
 
+// This function creates a new account and signs the user in.
 function route_register(PDO $pdo, array $config): void
 {
     if (!$config['allow_registration']) fail('Sign-ups are closed', 403);
@@ -13,12 +13,13 @@ function route_register(PDO $pdo, array $config): void
     json_out(['token' => make_token($config, (int) $user['id'])]);
 }
 
+// This function signs the user in.
 function route_login(PDO $pdo, array $config): void
 {
     $b = json_body();
     $user = login_user($pdo, (string) ($b['email'] ?? ''), (string) ($b['password'] ?? ''));
     if (!$user) {
-        sleep(1);   // a one-second pause makes guessing passwords slow
+        sleep(1);
         fail('Incorrect email or password', 401);
     }
     json_out(['token' => make_token($config, (int) $user['id'])]);

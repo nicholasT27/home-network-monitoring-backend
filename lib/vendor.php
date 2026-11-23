@@ -1,7 +1,6 @@
 <?php
-// A short built-in list that turns the first part of a MAC address (a device's hardware ID) into the maker's name,
-// for common home brands. Add more names here, or use the full public list, for more detail.
 
+// This function gives a short list that links the first part of a hardware ID to the maker's name.
 function oui_table(): array
 {
     return [
@@ -22,13 +21,13 @@ function oui_table(): array
     ];
 }
 
-// Phones often use a made-up (private) hardware ID so they cannot be tracked. A made-up ID can be recognised
-// by one marker in its first part; this function checks for that marker.
+// This function checks whether a hardware ID is a made-up (private) one, as phones use.
 function is_private_mac(string $mac): bool
 {
     return (hexdec(substr($mac, 0, 2)) & 0x02) !== 0;
 }
 
+// This function finds the maker's name of a device from its hardware ID.
 function vendor_for_mac(string $mac): ?string
 {
     if (is_private_mac($mac)) {

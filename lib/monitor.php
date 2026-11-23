@@ -1,12 +1,11 @@
 <?php
-// Handles a scan result: compares each device found with the user's saved list and raises alerts.
-// Every query is limited to one user, so households never see each other's data.
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/users.php';
 require_once __DIR__ . '/scanner.php';
 require_once __DIR__ . '/mailer.php';
 
+// This function saves one line in a device's history (for example: came online).
 function add_history(PDO $pdo, int $uid, string $mac, ?string $ip, ?string $host, string $event, string $at): void
 {
     $pdo->prepare('INSERT INTO connection_history (user_id, mac, ip, hostname, event, event_time) VALUES (?,?,?,?,?,?)')
@@ -28,6 +27,7 @@ function raise_alert(PDO $pdo, array $config, int $uid, string $type, string $ma
         ->execute([$uid, $mac, $ip, $host, $type, $message, $sent ? 1 : 0, $at]);
 }
 
+// This function marks a device as suspicious and raises an alert about it.
 function flag_suspicious(PDO $pdo, array $config, int $uid, array $dev, ?string $ip, ?string $host, string $reason, string $at): void
 {
     $pdo->prepare('UPDATE devices SET suspicious = 1, suspicious_reason = ? WHERE user_id = ? AND mac = ?')->execute([$reason, $uid, $dev['mac']]);
@@ -35,20 +35,19 @@ function flag_suspicious(PDO $pdo, array $config, int $uid, array $dev, ?string 
     raise_alert($pdo, $config, $uid, 'suspicious_device', $dev['mac'], $ip, $host, "Trusted device \"$name\" looks different: $reason", $at);
 }
 
+// This function checks whether two device names are the same.
 function same_name(?string $a, ?string $b): bool
 {
     return $a !== null && $b !== null && strcasecmp($a, $b) === 0;
 }
 
-// Applies one scan result to the user's saved data and returns a short summary.
+// This function takes the devices found by a scan, compares them with the saved list, and raises alerts for new ones.
 function process_scan(PDO $pdo, array $config, int $uid, array $found, string $source, int $startedMs): array
 {
     $at = now();
     $seen = [];
     $newUnknown = 0;
     $foundMacs = array_column($found, 'mac');
-    // The very first scan is the starting list: every device is new, so it gets one summary alert
-    // instead of one alert (and one email) for each device.
     $st = $pdo->prepare('SELECT COUNT(*) FROM scans WHERE user_id = ?');
     $st->execute([$uid]);
     $baseline = (int) $st->fetchColumn() === 0;
@@ -72,15 +71,13 @@ function process_scan(PDO $pdo, array $config, int $uid, array $found, string $s
                 add_history($pdo, $uid, $mac, $ip, $host, 'joined', $at);
             }
             if ($alive && $dev['ip'] !== $ip) {
-                add_history($pdo, $uid, $mac, $ip, $host, 'ip_changed', $at);   // the router gave the device a new address, which is normal: no alert
+                add_history($pdo, $uid, $mac, $ip, $host, 'ip_changed', $at);
             }
             if ($alive) {
                 $pdo->prepare('UPDATE devices SET ip = ?, online = 1, last_seen = ?, hostname = COALESCE(hostname, ?), vendor = COALESCE(vendor, ?) WHERE user_id = ? AND mac = ?')
                     ->execute([$ip, $at, $host, $vendor, $uid, $mac]);
             }
-            // If a device only shows up in an old leftover entry (it did not answer), leave it as it was; the check for missing devices below deals with it.
 
-            // Safety check against fakes: a trusted device must keep the same name and maker.
             if ($dev['status'] === 'trusted' && !$dev['suspicious']) {
                 if ($host !== null && $dev['hostname'] !== null && !same_name($host, $dev['hostname'])) {
                     flag_suspicious($pdo, $config, $uid, $dev, $ip, $host,
@@ -93,8 +90,6 @@ function process_scan(PDO $pdo, array $config, int $uid, array $found, string $s
             continue;
         }
 
-        // Unknown hardware ID (MAC). It may be a trusted phone that switched to a new private ID. Match it by name, but
-        // only if that trusted phone is not also online right now under its old ID.
         $rotated = false;
         if ($host !== null) {
             $st = $pdo->prepare("SELECT * FROM devices WHERE user_id = ? AND status = 'trusted' AND LOWER(hostname) = LOWER(?)");
@@ -131,7 +126,6 @@ function process_scan(PDO $pdo, array $config, int $uid, array $found, string $s
             ->execute([$uid, '-', null, null, 'baseline', "First scan found $newUnknown devices. Mark the ones you recognise as Trusted; anything you don't recognise stays Unknown.", 0, $at]);
     }
 
-    // Any device that was online before but was not found this time has left the network.
     $st = $pdo->prepare('SELECT mac, ip, hostname FROM devices WHERE user_id = ? AND online = 1');
     $st->execute([$uid]);
     foreach ($st->fetchAll() as $d) {
@@ -148,8 +142,7 @@ function process_scan(PDO $pdo, array $config, int $uid, array $found, string $s
     return ['started_at' => $at, 'duration_ms' => $duration, 'devices_found' => count($found), 'new_unknown' => $newUnknown];
 }
 
-// The scan lock is kept in the database, so it works however the program is started.
-// A lock that is too old is ignored, so a scan that crashed can never block scanning for good.
+// This function makes sure only one scan runs at a time for a user.
 function acquire_scan_lock(PDO $pdo, int $uid, int $staleSeconds): bool
 {
     $key = 'scan_lock_' . $uid;
@@ -158,16 +151,17 @@ function acquire_scan_lock(PDO $pdo, int $uid, int $staleSeconds): bool
         $pdo->prepare('INSERT INTO settings (k, v) VALUES (?, ?)')->execute([$key, (string) time()]);
         return true;
     } catch (PDOException $e) {
-        return false;   // the lock is already taken: another scan is running
+        return false;
     }
 }
 
+// This function lets the next scan start once the current one has finished.
 function release_scan_lock(PDO $pdo, int $uid): void
 {
     $pdo->prepare('DELETE FROM settings WHERE k = ?')->execute(['scan_lock_' . $uid]);
 }
 
-// Runs a scan on this server (modes "live" and "demo") for one user's network range.
+// This function runs a scan on this server and saves the result.
 function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual'): array
 {
     $uid = (int) $user['id'];
@@ -177,11 +171,10 @@ function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual
     }
     try {
         $startedMs = (int) round(microtime(true) * 1000);
-        @set_time_limit($target + 60);   // the web server's usual 30-second limit would stop a longer scan
+        @set_time_limit($target + 60);
         $st = $pdo->prepare('SELECT COUNT(*) FROM scans WHERE user_id = ?');
         $st->execute([$uid]);
         $round = (int) $st->fetchColumn() + 1;
-        // Device names are optional, so looking them up gets a short time limit instead of the whole scan time.
         $found = scan_network(['subnet' => user_subnet($user, $config), 'scan_mode' => $config['scan_mode']], time() + 25, $round);
         return process_scan($pdo, $config, $uid, $found, $source, $startedMs);
     } finally {
@@ -189,7 +182,7 @@ function run_scan(PDO $pdo, array $config, array $user, string $source = 'manual
     }
 }
 
-// Applies a scan sent by a user's home agent. Treat the data as untrusted and check every device.
+// This function saves a scan sent by the home agent, after checking every device in it.
 function ingest_agent_scan(PDO $pdo, array $config, array $user, array $payload): array
 {
     $uid = (int) $user['id'];

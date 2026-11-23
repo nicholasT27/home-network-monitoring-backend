@@ -1,6 +1,6 @@
 <?php
-// Routes for the home agent. The agent proves who it is with the user's personal agent key, not a dashboard login.
 
+// This function answers the home agent: tells it when to scan and receives the scan result.
 function route_agent(PDO $pdo, array $config, string $action, string $method): void
 {
     $agent = user_by_agent_key($pdo, (string) ($_SERVER['HTTP_X_AGENT_KEY'] ?? ''));

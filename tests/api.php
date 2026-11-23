@@ -2,14 +2,10 @@
 if (PHP_SAPI !== 'cli') {
     exit('CLI only');
 }
-// API tests over HTTP:  php tests/api.php
-// Starts PHP's built-in server on a temporary SQLite database and calls every endpoint.
 $port = 20000 + random_int(0, 9000);
 $db = sys_get_temp_dir() . "/netmon_api_test_$port.sqlite";
 @unlink($db);
 $root = dirname(__DIR__);
-// Default: a temporary SQLite database. With TEST_DB_HOST set, the tests run against that MySQL database instead
-// (its tables are dropped first, so use an empty test database; the backend then creates the tables itself).
 $mysql = getenv('TEST_DB_HOST') !== false;
 $dbEnv = ['DB_DSN' => "sqlite:$db"];
 if ($mysql) {
@@ -28,8 +24,10 @@ register_shutdown_function(function () use ($srv, $db) { proc_terminate($srv); @
 usleep(700000);
 
 $fail = 0;
+// This function records whether one test passed or failed.
 function check(string $name, bool $ok): void { global $fail; echo ($ok ? 'PASS' : 'FAIL') . "  $name\n"; if (!$ok) $fail++; }
 
+// This function sends a test request to the server.
 function call(string $action, string $method = 'GET', ?array $body = null, array $headers = [], array $query = []): array
 {
     global $port;
@@ -44,13 +42,12 @@ function call(string $action, string $method = 'GET', ?array $body = null, array
     foreach ($http_response_header ?? [] as $h) if (preg_match('#^HTTP/\S+\s+(\d{3})#', $h, $m)) $code = (int) $m[1];
     return [$code, json_decode((string) $out, true), $http_response_header ?? []];
 }
+// This function signs in for a test and gives back the login details.
 function auth(string $token): array { return ["X-Auth-Token: $token"]; }
 
-// --- the setup diagnostic is off unless DEBUG=1
 [$c] = call('health');
 check('health diagnostic is off by default (needs sign-in like any other action)', $c === 401);
 
-// --- accounts
 [$c] = call('status');
 check('status without sign-in is refused (401)', $c === 401);
 [$c, $r] = call('register', 'POST', ['email' => 'alice@example.com', 'password' => 'password-alice']);
@@ -67,7 +64,6 @@ check('wrong password rejected (401)', $c === 401);
 [$c] = call('login', 'GET');
 check('login by GET is not accepted', $c === 401);
 
-// --- status and settings
 [$c, $r] = call('status', 'GET', null, auth($alice));
 check('status has the expected fields', $c === 200 && $r['email'] === 'alice@example.com' && isset($r['agent_key'], $r['subnet'], $r['mode']) && $r['mode'] === 'demo' && $r['last_scan'] === null);
 $agentKey = $r['agent_key'];
@@ -88,7 +84,6 @@ check('test email answers with a sent flag', $c === 200 && array_key_exists('sen
 [$c] = call('test_email', 'GET', null, auth($alice));
 check('test email by GET is refused (405)', $c === 405);
 
-// --- scanning, devices, alerts, history
 [$c] = call('scan', 'GET', null, auth($alice));
 check('scan by GET is refused (405)', $c === 405);
 [$c, $r] = call('scan', 'POST', null, auth($alice));
@@ -109,7 +104,7 @@ check('renaming a device works', $c === 200 && array_values(array_filter($device
 check('device history has its first_seen event', count($h) >= 1 && $h[0]['event'] === 'first_seen');
 [, $alerts] = call('alerts', 'GET', null, auth($alice));
 check('baseline alert present after first scan', count($alerts) === 1 && $alerts[0]['type'] === 'baseline');
-call('scan', 'POST', null, auth($alice)); call('scan', 'POST', null, auth($alice));   // 3rd demo scan: an intruder appears
+call('scan', 'POST', null, auth($alice)); call('scan', 'POST', null, auth($alice));
 [, $alerts] = call('alerts', 'GET', null, auth($alice));
 check('new unknown device raises an alert', count(array_filter($alerts, fn($a) => $a['type'] === 'unknown_device')) === 1);
 [$c] = call('alert_ack', 'POST', ['id' => 'all'], auth($alice));
@@ -119,7 +114,6 @@ check('dismissing all alerts empties the list', $c === 200 && count($alerts) ===
 [, $devices] = call('devices', 'GET', null, auth($alice));
 check('removing a device works', $c === 200 && count(array_filter($devices, fn($d) => $d['mac'] === $mac)) === 0);
 
-// --- a second account sees nothing of the first
 [, $r] = call('register', 'POST', ['email' => 'bob@example.com', 'password' => 'password-bob']);
 $bob = $r['token'];
 [, $devices] = call('devices', 'GET', null, auth($bob));
@@ -128,7 +122,6 @@ check("second account sees none of the first account's devices or alerts", $devi
 [$c] = call('devices', 'GET', null, auth($alice . 'x'));
 check('a tampered token is refused (401)', $c === 401);
 
-// --- home agent
 [$c] = call('agent_poll', 'GET', null, ['X-Agent-Key: 00000000000000000000000000000000']);
 check('agent with a wrong key is refused (401)', $c === 401);
 [$c, $r] = call('agent_poll', 'GET', null, ["X-Agent-Key: $agentKey"]);
@@ -139,7 +132,6 @@ check('agent upload is stored in the right account', $c === 200 && count(array_f
 [, $r] = call('status', 'GET', null, auth($alice));
 check('status shows the agent online', $r['agent_online'] === true);
 
-// --- CORS preflight
 [$c, , $hdr] = call('devices', 'OPTIONS', null, ['Origin: http://localhost:5173']);
 check('CORS preflight answers 204 with the allowed origin', $c === 204 && in_array('Access-Control-Allow-Origin: http://localhost:5173', $hdr, true));
 [, , $hdr] = call('devices', 'OPTIONS', null, ['Origin: https://evil.example']);

@@ -1,10 +1,10 @@
 <?php
-// "Scan now": scans on this server, or asks the user's home agent to scan (SCAN_MODE=agent).
 
+// This function starts a scan, or asks the home agent to scan.
 function route_scan(PDO $pdo, array $config, array $user, string $method): void
 {
     if ($method !== 'POST') fail('POST required', 405);
-    if ($config['scan_mode'] === 'agent') {   // the user's home agent picks this up within seconds
+    if ($config['scan_mode'] === 'agent') {
         $pdo->prepare('UPDATE users SET scan_requested = ? WHERE id = ?')->execute([time(), $user['id']]);
         json_out(['queued' => true]);
     }

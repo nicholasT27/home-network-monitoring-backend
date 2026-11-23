@@ -1,13 +1,14 @@
 <?php
-// Accounts. Each household has one account, and everything saved (devices, alerts, history) is labelled with that account's id.
 
 require_once __DIR__ . '/db.php';
 
+// This function tidies an email address (removes spaces and capital letters).
 function normalise_email(string $email): string
 {
     return strtolower(trim($email));
 }
 
+// This function creates a new account.
 function create_user(PDO $pdo, string $email, string $password): array
 {
     $email = normalise_email($email);
@@ -25,6 +26,7 @@ function create_user(PDO $pdo, string $email, string $password): array
     return user_by_id($pdo, (int) $pdo->lastInsertId());
 }
 
+// This function finds a user from their email address.
 function user_by_email(PDO $pdo, string $email): ?array
 {
     $st = $pdo->prepare('SELECT * FROM users WHERE email = ?');
@@ -32,6 +34,7 @@ function user_by_email(PDO $pdo, string $email): ?array
     return $st->fetch() ?: null;
 }
 
+// This function finds a user from their id number.
 function user_by_id(PDO $pdo, int $id): ?array
 {
     $st = $pdo->prepare('SELECT * FROM users WHERE id = ?');
@@ -39,6 +42,7 @@ function user_by_id(PDO $pdo, int $id): ?array
     return $st->fetch() ?: null;
 }
 
+// This function finds a user from the personal key of their home agent.
 function user_by_agent_key(PDO $pdo, string $key): ?array
 {
     if (!preg_match('/^[0-9a-f]{32}$/', $key)) {
@@ -49,23 +53,24 @@ function user_by_agent_key(PDO $pdo, string $key): ?array
     return $st->fetch() ?: null;
 }
 
+// This function checks the email and password and gives back the user if they are correct.
 function login_user(PDO $pdo, string $email, string $password): ?array
 {
     $user = user_by_email($pdo, $email);
     return ($user && password_verify($password, $user['password_hash'])) ? $user : null;
 }
 
-// The network range to scan for this user: the one they chose, or the server's default.
+// This function gives back the network range to scan for this user.
 function user_subnet(array $user, array $config): string
 {
     return $user['subnet'] ?: $config['subnet'];
 }
 
-// Checks a network range typed by the user (like 192.168.0.0/24) and tidies it, for example 192.168.0.124/24 becomes 192.168.0.0/24.
+// This function checks the network range typed by the user and tidies it (for example 192.168.0.124/24 becomes 192.168.0.0/24).
 function normalise_subnet(string $cidr): string
 {
     $cidr = trim($cidr);
-    cidr_hosts($cidr);   // stops with an error if the range is not valid
+    cidr_hosts($cidr);
     [$ip, $prefix] = explode('/', $cidr);
     $mask = (~0 << (32 - (int) $prefix)) & 0xFFFFFFFF;
     return long2ip(ip2long($ip) & $mask) . '/' . (int) $prefix;

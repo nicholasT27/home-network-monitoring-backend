@@ -22,6 +22,7 @@ if ($config['agent_api_url'] === '' || $config['agent_key'] === '') {
     exit(1);
 }
 
+// This function sends a request to the dashboard's server and gives back its answer.
 function agent_call(array $config, string $action, ?array $body = null): ?array
 {
     $url = $config['agent_api_url'] . (str_contains($config['agent_api_url'], '?') ? '&' : '?') . 'action=' . $action;
@@ -34,8 +35,8 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
         }
         $out = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err = curl_error($ch);   // stays empty when the request worked
-    } else {   // This PHP has no curl add-on, so use PHP's basic web request instead (secure https links need the openssl add-on)
+        $err = curl_error($ch);
+    } else {
         $ctx = stream_context_create(['http' => [
             'method' => $body !== null ? 'POST' : 'GET', 'header' => implode("\r\n", $headers),
             'content' => $body !== null ? json_encode($body) : '', 'timeout' => 30, 'ignore_errors' => true,
@@ -49,7 +50,6 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
     }
     $data = json_decode((string) $out, true);
     if ($code !== 200 || !is_array($data)) {
-        // Code 0 means no answer came back at all (wrong address, no internet, or a security certificate problem), so explain why.
         $why = $code === 0 ? "could not connect to {$config['agent_api_url']}" . ($err !== '' ? " ($err)" : '') : substr((string) $out, 0, 200);
         fwrite(STDERR, "[" . date('H:i:s') . "] API error $action ($code): $why\n");
         return null;
@@ -57,6 +57,7 @@ function agent_call(array $config, string $action, ?array $body = null): ?array
     return $data;
 }
 
+// This function scans the home network and sends the list of devices to the dashboard's server.
 function agent_scan_and_send(array $config, string $subnet): void
 {
     $start = microtime(true);
@@ -87,7 +88,7 @@ $last = 0;
 while (true) {
     $poll = agent_call($config, 'agent_poll');
     if ($poll !== null && (($poll['scan_requested'] ?? false) || time() - $last >= $config['agent_interval_s'])) {
-        agent_scan_and_send($config, $poll['subnet']);   // the range to scan comes from the dashboard
+        agent_scan_and_send($config, $poll['subnet']);
         $last = time();
     }
     sleep(5);

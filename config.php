@@ -5,6 +5,7 @@
 //   3. settings typed into a web host's control panel
 // The names of all the settings are in the list just below.
 
+// This function reads the settings written in the .env file.
 function load_env_file(string $path): array
 {
     $vars = [];
@@ -25,7 +26,6 @@ function load_env_file(string $path): array
 $file = load_env_file(__DIR__ . '/.env');
 require_once __DIR__ . '/lib/db.php';
 $env = function (string $name) use ($file): ?string {
-    // Different web hosts hand over their settings in different ways, so look in each place.
     foreach ([getenv($name), $_ENV[$name] ?? false, $_SERVER[$name] ?? false] as $v) {
         if (is_string($v) && $v !== '') {
             return $v;
@@ -49,7 +49,7 @@ $config = [
     'scan_mode'    => 'live',
     'agent_api_url' => '',           // used by agent.php: the server's address, e.g. https://api.example.com/index.php
     'agent_key'    => '',            // used by agent.php: the personal key shown in the dashboard
-    'agent_interval_s' => 120,       // used by agent.php: scan at least this often (in seconds) (in seconds)
+    'agent_interval_s' => 120,       // used by agent.php: scan at least this often (in seconds)
     'scan_target_s' => 120,
 
     // People create their own accounts in the dashboard. Set ALLOW_REGISTRATION=0 to stop new sign-ups.
@@ -68,7 +68,7 @@ $config = [
     'smtp_port'    => 465,
     'smtp_secure'  => 'ssl',         // 'ssl' (secure) or 'none'
     'smtp_user'    => '',
-    'smtp_pass'    => '',            // Gmail: a 16-character app password (not your normal password) (not your normal password)
+    'smtp_pass'    => '',            // Gmail: a 16-character app password (not your normal password)
 ];
 
 $map = [
@@ -83,7 +83,6 @@ foreach ($map as $key => $name) {
         $config[$key] = $v;
     }
 }
-// Database connection: it can be given as one line, one web-style address, or separate values, under any of the names hosts use (see parse_db_settings in lib/db.php).
 if (($db = parse_db_settings($env)) !== null) {
     $config['db_dsn'] = $db['dsn'];
     $config['db_user'] = $db['user'];
