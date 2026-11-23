@@ -6,6 +6,19 @@ A system that finds the devices on your home network and emails you when an unkn
 
 **Live dashboard:** https://home-network-monitoring-frontend.pages.dev
 
+## About
+
+Most homes are set up once and never checked again, so the owner cannot tell when a new, unknown device joins the network. The **Home Network Device Monitoring and Alert System** finds the devices on a home network, tells the ones you know (**Trusted**) from the ones you do not (**Unknown**), and emails you when a new or suspicious device appears.
+
+It has three parts:
+- **Dashboard** (frontend repository): the web page where you see your devices and alerts.
+- **Backend** (this repository): a PHP and MySQL service that keeps each account's data, decides what is new or suspicious, and sends the alert emails.
+- **Home agent** (`agent.php`, this repository): a small program on a computer at home that scans the network and sends the result to the backend.
+
+A scan starts when you click **Scan now**, or by itself every 2 minutes. Devices are recognised by their MAC address, and each account only sees its own devices.
+
+Built as the final year project for the CSN Project (TSN309/10), Wawasan Open University.
+
 ## Steps for a new user
 
 You need a computer at home that stays on and is connected to your Wi-Fi or router (Windows, Mac or Linux).
